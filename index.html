@@ -1,309 +1,347 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cargando Reporte...</title>
+    <title>Dashboard de Transformación | Pro</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     
     <style>
-      /* (Mismo CSS profesional anterior con @media print y acordeones) */
-      :root { --primary: #1a73e8; --secondary: #5f6368; --success: #1e8e3e; --danger: #d93025; --warning: #f29900; --info: #0288d1; --background: #f0f2f5; --surface: #ffffff; --border: #e0e0e0; --text-main: #202124; }
-      * { box-sizing: border-box; }
-      body { font-family: 'Roboto', 'Segoe UI', sans-serif; padding: 20px; background-color: var(--background); color: var(--text-main); margin: 0; }
-      .container { max-width: 1000px; margin: auto; }
-      .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-      .action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
-      .view-controls { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px 25px; background: #f8fafd; border-radius: 8px; border: 1px solid #e1eaf7; align-items: center;}
-      .view-controls-title { flex-grow: 1; margin: 0; font-size: 16px; color: var(--secondary); font-weight: bold;}
-      .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: all 0.2s ease; }
-      .btn-primary { background: var(--primary); color: white; }
-      .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
-      .card { background: var(--surface); padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
-      .header-card { border-left: 6px solid var(--primary); }
-      .summary-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 40px; background: #f8fafd; padding: 20px 25px; border-radius: 8px; border: 1px solid #e1eaf7; margin-bottom: 25px; }
-      .summary-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #d2dceb; padding-bottom: 6px; }
-      .summary-label { font-size: 13px; color: var(--secondary); font-weight: 600; text-transform: uppercase; }
-      .summary-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
-      .text-primary { color: var(--primary) !important; } .text-success { color: var(--success) !important; } .text-danger { color: var(--danger) !important; }
-      .table-responsive { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: white; overflow-x: auto; }
-      table { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
-      th { position: sticky; top: 0; background-color: #f8f9fa; color: var(--secondary); font-size: 12px; text-transform: uppercase; padding: 14px 20px; text-align: left; border-bottom: 2px solid var(--border); }
-      th.sortable { cursor: pointer; user-select: none; }
-      td { padding: 14px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
-      .table-footer td { background-color: #f4f6f9 !important; border-top: 2px solid #cbd0d6; font-weight: bold; }
-      .row-group-header { background-color: #f4f6f9 !important; border-top: 2px solid #cbd0d6; cursor: pointer; }
-      .row-sub-item td { padding-left: 45px !important; color: var(--secondary); font-size: 13px; border-bottom: 1px dashed var(--border);}
-      .progress-wrapper { display: flex; align-items: center; gap: 12px; }
-      .progress-bar { flex-grow: 1; background: #e8eaed; height: 6px; border-radius: 3px; overflow: hidden; }
-      .progress-fill { background: var(--primary); height: 100%; width: 0%; transition: width 1.2s ease; }
-      .pct-text { width: 60px; text-align: right; font-weight: 600; font-size: 13px; color: var(--secondary); }
-      .chart-layout { display: flex; flex-direction: row; gap: 20px; align-items: center; }
-      .chart-canvas-wrapper { flex: 1; height: 350px; position: relative; }
-      .chart-legend-wrapper { flex: 1; max-height: 350px; overflow-y: auto; padding-right: 15px; }
-      .loader { text-align: center; padding: 60px 20px; color: var(--secondary); }
-      .kpi-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; background: #e1f5fe; color: var(--info); border: 1px solid rgba(0,0,0,0.05);}
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
 
-      @media print {
-        .action-bar, .view-controls { display: none !important; }
-        #vista-tabla, #vista-partes, #vista-grafico { display: block !important; }
-        #vista-grafico { display: flex !important; margin-top: 30px; }
-        .row-sub-item { display: table-row !important; }
-        table { page-break-inside: auto; }
-        tr { page-break-inside: avoid; }
-        * { -webkit-print-color-adjust: exact !important; opacity: 1 !important; visibility: visible !important; }
-      }
+        :root {
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --glass: rgba(255, 255, 255, 0.03);
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-dim: #94a3b8;
+            --text-main: #f8fafc;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 30px 20px;
+        }
+
+        .container { max-width: 1200px; margin: auto; }
+
+        /* HEADER CINEMÁTICO */
+        .glass-header {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 24px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .brand h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand p { color: var(--text-dim); font-size: 13px; margin-top: 4px; text-transform: uppercase; letter-spacing: 2px; }
+
+        .btn-group { display: flex; gap: 12px; }
+        .btn { 
+            padding: 12px 24px; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; border: 1px solid transparent;
+        }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4); }
+        .btn-primary:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.5); }
+        .btn-outline { background: var(--glass); color: white; border: 1px solid var(--border); }
+        .btn-outline:hover { background: rgba(255,255,255,0.1); transform: translateY(-3px); }
+
+        /* GRID DASHBOARD */
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 25px; }
+
+        .card { 
+            background: var(--surface); backdrop-filter: blur(10px); border: 1px solid var(--border);
+            border-radius: 24px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        /* KPIs */
+        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+        .kpi-box { background: var(--glass); padding: 20px; border-radius: 18px; border: 1px solid var(--border); }
+        .kpi-label { font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+        .kpi-value { font-size: 22px; font-weight: 800; color: #fff; }
+        .kpi-value small { font-size: 14px; color: var(--text-dim); margin-left: 4px; }
+
+        /* TABLAS MODERNAS */
+        .table-container { width: 100%; overflow-x: auto; margin-top: 20px; border-radius: 16px; }
+        table { width: 100%; border-collapse: collapse; color: var(--text-main); }
+        th { text-align: left; padding: 16px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border); letter-spacing: 1px; }
+        td { padding: 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        
+        tr.row-group { cursor: pointer; transition: background 0.3s; }
+        tr.row-group:hover { background: rgba(255,255,255,0.05); }
+        .badge-pill { padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 11px; background: var(--glass); border: 1px solid var(--border); }
+
+        /* PROGRESS BARS */
+        .bar-container { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-top: 8px; position: relative; }
+        .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #60a5fa); width: 0; transition: width 1.5s cubic-bezier(0.65, 0, 0.35, 1); }
+
+        /* VISUALIZADOR */
+        .chart-box { display: flex; flex-direction: column; height: 100%; }
+        #legend-container { margin-top: 20px; display: grid; gap: 10px; }
+        .legend-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--glass); border-radius: 12px; font-size: 12px; }
+
+        /* LOADER */
+        #loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .loader-glow { width: 80px; height: 80px; border: 4px solid var(--glass); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s infinite cubic-bezier(0.5, 0, 0.5, 1); filter: drop-shadow(0 0 15px var(--accent)); }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media print {
+            body { background: white !important; color: black !important; padding: 0; }
+            .action-bar, .btn-group, #loader { display: none !important; }
+            .card { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
     </style>
-  </head>
-  <body>
-    <div class="container" id="reporte-contenedor">
-      
-      <div id="loader" class="loader fade-in">
-        <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--primary);"></i>
-        <p style="margin-top: 20px; font-weight: 500;">Conectando con la API de Almacén...</p>
-      </div>
+</head>
+<body>
 
-      <div id="dashboard" style="display: none;" class="fade-in">
-        <div class="action-bar" id="botones-accion">
-          <button class="btn btn-outline" style="color: #1e8e3e; border-color: #1e8e3e;" onclick="exportarExcel()" id="btnExcel"><i class="fas fa-file-excel"></i> Excel</button>
-          <button class="btn btn-primary" onclick="descargarPDF()" id="btnExportar"><i class="fas fa-file-pdf"></i> Reporte Master</button>
-        </div>
+    <div id="loader">
+        <div class="loader-glow"></div>
+        <p style="margin-top: 25px; letter-spacing: 4px; font-size: 11px; font-weight: 800; color: var(--text-dim);">SINCRONIZANDO DATOS</p>
+    </div>
 
-        <div class="card header-card">
-          <h2>
-            <span><i class="fas fa-cube"></i> Producto: <span id="lblProductoDestino">-</span></span>
-            <span style="font-size: 14px; color: var(--secondary); font-weight: normal;"><i class="fas fa-truck"></i> Prov: <span id="lblProveedor">-</span></span>
-          </h2>
-          <div class="summary-matrix">
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <div class="summary-row"><span class="summary-label">Ingreso:</span><span class="summary-value text-primary"><span id="lblPesoTrans">0.00</span> Kg</span></div>
-              <div class="summary-row"><span class="summary-label">Resultado:</span><span class="summary-value"><span id="lblPesoTotalIngresos">0.00</span> Kg</span></div>
-              <div class="summary-row"><span class="summary-label">Diferencia:</span><span class="summary-value text-danger"><span id="lblPesoFaltante">0.00</span> Kg</span></div>
+    <div class="container" id="main-content" style="opacity: 0;">
+        
+        <header class="glass-header anim-entry">
+            <div class="brand">
+                <p id="lblLote">LOTE: -</p>
+                <h1 id="lblProductoDestino">REPORTE DE TRANSFORMACIÓN</h1>
+                <p style="color: var(--accent);"><i class="fas fa-industry"></i> <span id="lblProveedor">-</span></p>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <div class="summary-row"><span class="summary-label">Lote:</span><span class="summary-value" id="lblLote">-</span></div>
-              <div class="summary-row"><span class="summary-label">% Rendimiento:</span><span class="summary-value text-success"><span id="lblEficiencia">0.00</span> %</span></div>
-              <div class="summary-row"><span class="summary-label">% Merma:</span><span class="summary-value text-danger"><span id="lblMerma">0.00</span> %</span></div>
+            <div class="btn-group">
+                <button class="btn btn-outline" onclick="exportarExcel()" id="btnExcel"><i class="fas fa-file-excel"></i> EXCEL PRO</button>
+                <button class="btn btn-primary" onclick="descargarPDF()" id="btnExportar"><i class="fas fa-print"></i> PDF MASTER</button>
             </div>
-          </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card anim-entry">
+                <p class="kpi-label">Rendimiento Operativo</p>
+                <div class="kpi-row">
+                    <div class="kpi-box">
+                        <p class="kpi-label">Peso Ingreso</p>
+                        <p class="kpi-value" id="lblPesoTrans">0.00<small>KG</small></p>
+                    </div>
+                    <div class="kpi-box">
+                        <p class="kpi-label">Peso Final</p>
+                        <p class="kpi-value" id="lblPesoTotalIngresos">0.00<small>KG</small></p>
+                    </div>
+                    <div class="kpi-box">
+                        <p class="kpi-label">Eficiencia</p>
+                        <p class="kpi-value" style="color: var(--success);" id="lblEficiencia">0.00<small>%</small></p>
+                    </div>
+                </div>
+            </div>
+            <div class="card anim-entry">
+                <div class="chart-box">
+                    <p class="kpi-label">Balance de Masa</p>
+                    <div style="height: 180px; position: relative;">
+                        <canvas id="donaChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="card">
-          <div class="view-controls">
-             <p class="view-controls-title">Analítica de Transformación</p>
-             <button class="btn btn-primary" onclick="setVista('tabla')" id="btnTabTabla">Resumen Insumos</button>
-             <button class="btn btn-outline" onclick="setVista('partes')" id="btnTabPartes">Desglose Partes</button>
-             <button class="btn btn-outline" onclick="setVista('grafico')" id="btnTabGrafico">Visual</button>
-          </div>
+        <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+            <div class="card anim-entry">
+                <div class="view-controls">
+                    <button class="btn btn-primary" onclick="setVista('tabla')" id="btnTabTabla">INSUMOS</button>
+                    <button class="btn btn-outline" onclick="setVista('partes')" id="btnTabPartes">PARTES PRIMARIAS</button>
+                </div>
 
-          <div id="vista-tabla" class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th id="th-material" class="sortable" onclick="ordenarDetalle('material')" data-label="Material">Material</th>
-                  <th id="th-parte" class="sortable" onclick="ordenarDetalle('parte')" data-label="Partes">Partes</th>
-                  <th id="th-peso" class="sortable" onclick="ordenarDetalle('peso')" data-label="Peso">Peso (Kg)</th>
-                  <th id="th-pct" class="sortable" onclick="ordenarDetalle('pct')" data-label="% Part.">% Part.</th>
-                </tr>
-              </thead>
-              <tbody id="tablaBody"></tbody>
-              <tfoot id="tablaFoot" class="table-footer"></tfoot>
-            </table>
-          </div>
+                <div id="vista-tabla" class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Insumo</th><th>Destino</th><th>Masa Total</th><th>Participación</th></tr>
+                        </thead>
+                        <tbody id="tablaBody"></tbody>
+                        <tfoot id="tablaFoot" class="table-footer"></tfoot>
+                    </table>
+                </div>
 
-          <div id="vista-partes" class="table-responsive" style="display: none;">
-            <table>
-              <thead>
-                <tr><th>Parte</th><th>Peso (Kg)</th><th>% Part.</th><th>% Rend.</th></tr>
-              </thead>
-              <tbody id="tablaPartesBody"></tbody>
-              <tfoot id="tablaPartesFoot" class="table-footer"></tfoot>
-            </table>
-          </div>
-
-          <div id="vista-grafico" class="chart-layout" style="display: none;">
-            <div class="chart-canvas-wrapper"><canvas id="donaChart"></canvas></div>
-            <div class="chart-legend-wrapper" id="custom-legend"></div>
-          </div>
+                <div id="vista-partes" class="table-container" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr><th>Parte Primaria</th><th>Peso Consolidado</th><th>% Masa</th><th>% Rendimiento</th></tr>
+                        </thead>
+                        <tbody id="tablaPartesBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
     <script>
-      // ==========================================
-      // CONFIGURACIÓN DE MIGRACIÓN
-      // ==========================================
-      // PEGA AQUÍ LA URL DE TU SCRIPT PUBLICADO (Apps Script Web App URL)
-      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx1yz9OGqtgWmXYEbiw6rFTfuyx-WM6r2WnW04-szj1EItjsJCRf2CYJelrilklqrfX/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx1yz9OGqtgWmXYEbiw6rFTfuyx-WM6r2WnW04-szj1EItjsJCRf2CYJelrilklqrfX/exec"; 
+        var datosGlobales = [];
+        var pesoRealGlobal = 0;
+        var pesoRefGlobal = 0;
+        var chartObj = null;
 
-      var datosGlobales = [];
-      var pesoRealGlobal = 0;
-      var pesoRefGlobal = 0;
-      var sortConfig = { col: 'peso', asc: false };
-      var datosChartObj = null;
+        const urlParams = new URLSearchParams(window.location.search);
+        const idTrans = urlParams.get('id_trans');
 
-      // 1. OBTENER ID DE LA URL (ej. index.html?id_trans=59999896)
-      const urlParams = new URLSearchParams(window.location.search);
-      const idTrans = urlParams.get('id_trans');
+        window.onload = () => { if(idTrans) cargarDatos(); else mostrarError("No se detectó ID"); };
 
-      // 2. INICIO DE CARGA
-      window.onload = function() {
-        if (!idTrans) {
-            document.getElementById('loader').innerHTML = `<div class="kpi-badge text-danger">Error: No se detectó ID de transformación en la URL.</div>`;
-            return;
-        }
-        cargarDatos();
-      };
-
-      async function cargarDatos() {
-        try {
-            // El modo 'cors' es vital para GitHub -> Google
-            const response = await fetch(`${WEB_APP_URL}?id_trans=${idTrans}`);
-            const res = await response.json();
-            procesarRespuesta(res);
-        } catch (error) {
-            console.error("Error API:", error);
-            document.getElementById('loader').innerHTML = `<div class="kpi-badge text-danger">Error de conexión con la API de Google.</div>`;
-        }
-      }
-
-      // ==========================================
-      // LÓGICA DE PROCESAMIENTO (REUTILIZADA)
-      // ==========================================
-      const formatStrict = (v, d = 2) => {
-        const n = parseFloat(v) || 0;
-        const s = n.toFixed(d + 2); 
-        const p = s.split('.');
-        return p[0] + '.' + p[1].substring(0, d);
-      };
-
-      function escapeHtml(t) { return String(t || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
-
-      function procesarRespuesta(res) {
-        document.getElementById('loader').style.display = 'none';
-        if(!res || !res.exito) {
-           document.getElementById('dashboard').style.display = 'block';
-           document.getElementById('dashboard').innerHTML = `<div class="kpi-badge text-danger">${res ? res.mensaje : 'ID no encontrado'}</div>`;
-           return;
+        async function cargarDatos() {
+            try {
+                const r = await fetch(`${WEB_APP_URL}?id_trans=${idTrans}`);
+                const res = await r.json();
+                renderUI(res);
+            } catch(e) { mostrarError("Error en API"); }
         }
 
-        document.getElementById('dashboard').style.display = 'block';
-        const cab = res.cabecera;
-        document.getElementById('lblProductoDestino').innerText = cab.productoDestino;
-        document.getElementById('lblProveedor').innerText = cab.proveedor;
-        document.getElementById('lblLote').innerText = cab.lote;
-        
-        pesoRefGlobal = parseFloat(formatStrict(cab.pesoTotalCarga, 2));
-        pesoRealGlobal = parseFloat(formatStrict(res.pesoTotal, 2));
+        function renderUI(res) {
+            gsap.to("#loader", { opacity: 0, duration: 0.8, onComplete: () => document.getElementById('loader').remove() });
+            gsap.to("#main-content", { opacity: 1, y: 0, duration: 1, ease: "power4.out" });
 
-        const merma = Math.max(0, pesoRefGlobal - pesoRealGlobal);
-        document.getElementById('lblPesoTrans').innerText = formatStrict(pesoRefGlobal, 2);
-        document.getElementById('lblPesoTotalIngresos').innerText = formatStrict(pesoRealGlobal, 2);
-        document.getElementById('lblPesoFaltante').innerText = formatStrict(merma, 2);
-        document.getElementById('lblEficiencia').innerText = formatStrict(pesoRefGlobal > 0 ? (pesoRealGlobal / pesoRefGlobal) * 100 : 0, 2);
-        document.getElementById('lblMerma').innerText = formatStrict(pesoRefGlobal > 0 ? (merma / pesoRefGlobal) * 100 : 0, 2);
+            const cab = res.cabecera;
+            document.getElementById('lblProductoDestino').innerText = cab.productoDestino.toUpperCase();
+            document.getElementById('lblProveedor').innerText = cab.proveedor.toUpperCase();
+            document.getElementById('lblLote').innerText = `LOTE: ${cab.lote}`;
 
-        datosGlobales = res.datos;
-        renderizarTablas();
-      }
+            pesoRefGlobal = cab.pesoTotalCarga;
+            pesoRealGlobal = res.pesoTotal;
 
-      function renderizarTablas() {
-        const tbodyDetalle = document.getElementById('tablaBody');
-        const tfootDetalle = document.getElementById('tablaFoot');
-        const tbodyPartes = document.getElementById('tablaPartesBody');
-        const tfootPartes = document.getElementById('tablaPartesFoot');
-        
-        tbodyDetalle.innerHTML = ''; tbodyPartes.innerHTML = '';
+            document.getElementById('lblPesoTrans').innerHTML = `${pesoRefGlobal.toFixed(2)}<small>KG</small>`;
+            document.getElementById('lblPesoTotalIngresos').innerHTML = `${pesoRealGlobal.toFixed(2)}<small>KG</small>`;
+            document.getElementById('lblEficiencia').innerHTML = `${((pesoRealGlobal/pesoRefGlobal)*100).toFixed(2)}<small>%</small>`;
 
-        const matGroup = {}; const partGroup = {};
-        datosGlobales.forEach(it => {
-            const p = parseFloat(it.peso) || 0;
-            // Agrupar Material
-            matGroup[it.material] = matGroup[it.material] || { p: 0, parts: new Set() };
-            matGroup[it.material].p += p; matGroup[it.material].parts.add(it.parte);
-            // Agrupar Parte
-            partGroup[it.parte] = partGroup[it.parte] || { p: 0, items: [] };
-            partGroup[it.parte].p += p; partGroup[it.parte].items.push({ m: it.material, p: p });
-        });
+            datosGlobales = res.datos;
+            dibujarTablas();
+        }
 
-        // Render Detalle
-        let listMat = Object.keys(matGroup).map(k => ({ material: k, parte: Array.from(matGroup[k].parts).join(', '), peso: matGroup[k].p }));
-        listMat.sort((a, b) => {
-            let vA = a[sortConfig.col], vB = b[sortConfig.col];
-            if (typeof vA === 'string') { vA = vA.toUpperCase(); vB = vB.toUpperCase(); }
-            return sortConfig.asc ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
-        });
-
-        listMat.forEach((it, idx) => {
-            const pct = pesoRealGlobal > 0 ? (it.peso / pesoRealGlobal) * 100 : 0;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td><b>${escapeHtml(it.material)}</b></td><td>${escapeHtml(it.parte)}</td><td>${formatStrict(it.peso, 2)}</td><td><div class="progress-wrapper"><div class="progress-bar"><div class="progress-fill" id="bar-${idx}" style="width:0%"></div></div><div class="pct-text">${formatStrict(pct, 2)}%</div></div></td>`;
-            tbodyDetalle.appendChild(tr);
-            setTimeout(() => document.getElementById(`bar-${idx}`).style.width = formatStrict(pct, 2) + '%', 100);
-        });
-        tfootDetalle.innerHTML = `<tr><td colspan="2">TOTAL INSUMOS</td><td>${formatStrict(pesoRealGlobal, 2)}</td><td>100.00%</td></tr>`;
-
-        // Render Partes
-        const listPart = Object.keys(partGroup).map(k => ({ parte: k, peso: partGroup[k].p, items: partGroup[k].items })).sort((a, b) => b.peso - a.peso);
-        const labels = []; const values = [];
-        listPart.forEach((g, idx) => {
-            labels.push(g.parte); values.push(g.peso);
-            const tr = document.createElement('tr'); tr.className = 'row-group-header';
-            tr.onclick = () => { const rows = document.querySelectorAll(`.sub-${idx}`); const icon = document.getElementById(`icon-${idx}`); const isCol = icon.classList.contains('fa-chevron-right'); icon.classList.toggle('fa-chevron-right'); icon.classList.toggle('fa-chevron-down'); rows.forEach(r => r.style.display = isCol ? 'table-row' : 'none'); };
-            tr.innerHTML = `<td><i class="fas fa-chevron-right" id="icon-${idx}"></i> ${escapeHtml(g.parte)}</td><td>${formatStrict(g.peso, 2)}</td><td>${formatStrict((g.peso/pesoRealGlobal)*100, 2)}%</td><td><span class="kpi-badge">${formatStrict((g.peso/pesoRefGlobal)*100, 2)}%</span></td>`;
-            tbodyPartes.appendChild(tr);
-            g.items.forEach(it => {
-                const sr = document.createElement('tr'); sr.className = `row-sub-item sub-${idx}`; sr.style.display = 'none';
-                sr.innerHTML = `<td>└ ${escapeHtml(it.m)}</td><td>${formatStrict(it.p, 2)}</td><td>${formatStrict((it.p/pesoRealGlobal)*100, 2)}%</td><td></td>`;
-                tbodyPartes.appendChild(sr);
+        function dibujarTablas() {
+            const body = document.getElementById('tablaBody');
+            body.innerHTML = '';
+            
+            // Agrupación de Insumos
+            const matG = {};
+            datosGlobales.forEach(d => {
+                matG[d.material] = matG[d.material] || { p: 0, parts: new Set() };
+                matG[d.material].p += d.peso;
+                matG[d.material].parts.add(d.parte);
             });
-        });
-        tfootPartes.innerHTML = `<tr><td>TOTAL ESTRUCTURAL</td><td>${formatStrict(pesoRealGlobal, 2)}</td><td>100.00%</td><td>${formatStrict((pesoRealGlobal/pesoRefGlobal)*100, 2)}%</td></tr>`;
-        generarGrafico(labels, values);
-      }
 
-      function generarGrafico(l, v) {
-        if(datosChartObj) datosChartObj.destroy();
-        datosChartObj = new Chart(document.getElementById('donaChart'), { type: 'doughnut', data: { labels: l, datasets: [{ data: v, backgroundColor: ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00bcd4'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-        document.getElementById('custom-legend').innerHTML = l.map((label, i) => `<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;"><span>${label}</span><b>${formatStrict(v[i], 2)} Kg</b></div>`).join('');
-      }
+            Object.keys(matG).forEach((k, i) => {
+                const row = document.createElement('tr');
+                const pct = (matG[k].p / pesoRealGlobal) * 100;
+                row.innerHTML = `
+                    <td><b>${k}</b></td>
+                    <td><span class="badge-pill">${Array.from(matG[k].parts).join(', ')}</span></td>
+                    <td>${matG[k].p.toFixed(2)} Kg</td>
+                    <td>
+                        <div class="progress-wrapper">
+                            <div class="pct-text" style="font-weight:800; font-size:12px; margin-bottom:4px;">${pct.toFixed(2)}%</div>
+                            <div class="bar-container"><div class="bar-fill" style="width: ${pct}%"></div></div>
+                        </div>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
 
-      function setVista(v) { ['tabla', 'partes', 'grafico'].forEach(x => { document.getElementById('vista-'+x).style.display = 'none'; document.getElementById('btnTab'+x.charAt(0).toUpperCase()+x.slice(1)).className = 'btn btn-outline'; }); document.getElementById('vista-'+v).style.display = v==='grafico'?'flex':'block'; document.getElementById('btnTab'+v.charAt(0).toUpperCase()+v.slice(1)).className = 'btn btn-primary'; if(v==='grafico') datosChartObj.resize(); }
-      
-      function ordenarDetalle(c) { if(sortConfig.col===c) sortConfig.asc = !sortConfig.asc; else { sortConfig.col=c; sortConfig.asc=false; } renderizarTablas(); }
+            // Agrupación de Partes Primarias
+            const partBody = document.getElementById('tablaPartesBody');
+            partBody.innerHTML = '';
+            const pG = {};
+            datosGlobales.forEach(d => {
+                pG[d.parte] = (pG[d.parte] || 0) + d.peso;
+            });
 
-      // ==========================================
-      // EXPORTACIONES (CON NOMENCLATURA)
-      // ==========================================
-      async function exportarExcel() {
-        const safe = (id) => document.getElementById(id).innerText.toUpperCase();
-        const nom = `TRANSFORMACION_${safe('lblProductoDestino')}_${safe('lblLote')}_${safe('lblProveedor')}`;
-        const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Reporte');
-        ws.addRow([`REPORTE: ${nom}`]);
-        ws.addRow(["PESO INGRESO", parseFloat(document.getElementById('lblPesoTrans').innerText)]);
-        ws.addRow(["PESO RESULTADO", parseFloat(document.getElementById('lblPesoTotalIngresos').innerText)]);
-        ws.addRow([]);
-        ws.addRow(["MATERIAL", "PARTE", "PESO (KG)", "% PART"]);
-        document.querySelectorAll('#tablaBody tr').forEach(r => { const c = r.querySelectorAll('td'); if(c.length >= 4) ws.addRow([c[0].innerText, c[1].innerText, parseFloat(c[2].innerText), c[3].querySelector('.pct-text').innerText]); });
-        const buf = await wb.xlsx.writeBuffer(); saveAs(new Blob([buf]), `${nom}.xlsx`);
-      }
+            const labels = []; const values = [];
+            Object.keys(pG).forEach(k => {
+                labels.push(k); values.push(pG[k]);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><b>${k}</b></td>
+                    <td>${pG[k].toFixed(2)} Kg</td>
+                    <td>${((pG[k]/pesoRealGlobal)*100).toFixed(2)}%</td>
+                    <td><span class="badge-pill" style="color:var(--success)">${((pG[k]/pesoRefGlobal)*100).toFixed(2)}%</span></td>
+                `;
+                partBody.appendChild(row);
+            });
 
-      function descargarPDF() {
-        const safe = (id) => document.getElementById(id).innerText.toUpperCase();
-        const nom = `TRANSFORMACION_${safe('lblProductoDestino')}_${safe('lblLote')}_${safe('lblProveedor')}`;
-        const orig = document.title; document.title = nom;
-        document.querySelectorAll('.row-sub-item').forEach(r => r.style.display = 'table-row');
-        document.getElementById('vista-tabla').style.display = 'block';
-        document.getElementById('vista-partes').style.display = 'block';
-        document.getElementById('vista-grafico').style.display = 'flex';
-        datosChartObj.resize();
-        setTimeout(() => { window.print(); document.title = orig; location.reload(); }, 500);
-      }
+            initChart(labels, values);
+        }
+
+        function initChart(l, v) {
+            const ctx = document.getElementById('donaChart').getContext('2d');
+            chartObj = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: l, datasets: [{ data: v, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWeight: 0 }] },
+                options: { cutout: '80%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
+            });
+        }
+
+        async function exportarExcel() {
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('Reporte Master');
+            const nom = `TRANSFORMACION_${document.getElementById('lblProductoDestino').innerText}_${document.getElementById('lblLote').innerText}`;
+
+            // ESTILOS PRO
+            const titleSt = { font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 14 }, fill: { type: 'pattern', pattern:'solid', fgColor:{argb:'FF0F172A'} } };
+            const subSt = { font: { bold: true, color: { argb: 'FFFFFFFF' } }, fill: { type: 'pattern', pattern:'solid', fgColor:{argb:'FF3B82F6'} } };
+
+            // TABLA 1: RESUMEN EJECUTIVO
+            ws.addRow(['1. RESUMEN EJECUTIVO']).font = {bold:true, size:12};
+            ws.addRow(['PRODUCTO', document.getElementById('lblProductoDestino').innerText]);
+            ws.addRow(['PROVEEDOR', document.getElementById('lblProveedor').innerText]);
+            ws.addRow(['LOTE', document.getElementById('lblLote').innerText]);
+            ws.addRow(['PESO INICIAL', parseFloat(document.getElementById('lblPesoTrans').innerText)]);
+            ws.addRow(['PESO FINAL', parseFloat(document.getElementById('lblPesoTotalIngresos').innerText)]);
+            ws.addRow(['RENDIMIENTO', document.getElementById('lblEficiencia').innerText]);
+            ws.addRow([]);
+
+            // TABLA 2: RENDIMIENTO ESTRUCTURAL (PARTES)
+            ws.addRow(['2. RENDIMIENTO POR PARTES PRIMARIAS']).font = {bold:true, size:12};
+            const h2 = ws.addRow(['PARTE PRIMARIA', 'PESO KG', '% MASA', '% RENDIMIENTO']);
+            h2.eachCell(c => c.style = subSt);
+            document.querySelectorAll('#tablaPartesBody tr').forEach(r => {
+                const c = r.querySelectorAll('td');
+                ws.addRow([c[0].innerText, parseFloat(c[1].innerText), c[2].innerText, c[3].innerText]);
+            });
+            ws.addRow([]);
+
+            // TABLA 3: DESGLOSE OPERATIVO (INSUMOS)
+            ws.addRow(['3. DESGLOSE OPERATIVO DE INSUMOS']).font = {bold:true, size:12};
+            const h3 = ws.addRow(['MATERIAL', 'DESTINOS', 'MASA TOTAL', '% PARTICIPACIÓN']);
+            h3.eachCell(c => c.style = subSt);
+            document.querySelectorAll('#tablaBody tr').forEach(r => {
+                const c = r.querySelectorAll('td');
+                ws.addRow([c[0].innerText, c[1].innerText, parseFloat(c[2].innerText), c[3].querySelector('.pct-text').innerText]);
+            });
+
+            ws.columns.forEach(c => c.width = 25);
+            const b = await wb.xlsx.writeBuffer();
+            saveAs(new Blob([b]), `${nom}.xlsx`);
+        }
+
+        function descargarPDF() { window.print(); }
+        function setVista(v) {
+            document.getElementById('vista-tabla').style.display = v==='tabla' ? 'block' : 'none';
+            document.getElementById('vista-partes').style.display = v==='partes' ? 'block' : 'none';
+        }
+        function mostrarError(m) { document.getElementById('loader').innerHTML = `<p style="color:var(--danger)">${m}</p>`; }
     </script>
-  </body>
+</body>
 </html>
