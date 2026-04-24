@@ -1,347 +1,694 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+  <head>
+    <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard de Transformación | Pro</title>
+    <title>Reporte de Transformación</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+      :root {
+        --primary: #1a73e8; --secondary: #5f6368; --success: #1e8e3e; --danger: #d93025; --warning: #f29900; --info: #0288d1;
+        --background: #f0f2f5; --surface: #ffffff; --border: #e0e0e0; --text-main: #202124;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: 'Roboto', 'Segoe UI', sans-serif; padding: 20px; background-color: var(--background); color: var(--text-main); margin: 0; -webkit-font-smoothing: antialiased; }
+      .container { max-width: 1000px; margin: auto; }
+      .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        :root {
-            --bg: #0f172a;
-            --surface: rgba(30, 41, 59, 0.7);
-            --glass: rgba(255, 255, 255, 0.03);
-            --accent: #3b82f6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --text-dim: #94a3b8;
-            --text-main: #f8fafc;
-            --border: rgba(255, 255, 255, 0.1);
-        }
+      /* BARRAS DE ACCIÓN Y TABS */
+      .action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
+      .view-controls { display: flex; gap: 10px; margin-bottom: 20px; padding: 15px 25px; background: #f8fafd; border-radius: 8px; border: 1px solid #e1eaf7; align-items: center;}
+      .view-controls-title { flex-grow: 1; margin: 0; font-size: 16px; color: var(--secondary); font-weight: bold;}
+      
+      .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: all 0.2s ease; }
+      .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(26,115,232,0.3); }
+      .btn-primary:hover { background: #1557b0; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(26,115,232,0.4); }
+      .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+      .btn-outline:hover { background: #e8f0fe; transform: translateY(-2px); }
+      .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+      
+      .card { background: var(--surface); padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+      .header-card { border-left: 6px solid var(--primary); }
+      .header-card h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
+      
+      /* MATRIZ DE RESULTADOS */
+      .summary-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 40px; background: #f8fafd; padding: 20px 25px; border-radius: 8px; border: 1px solid #e1eaf7; margin-bottom: 25px; }
+      .summary-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #d2dceb; padding-bottom: 6px; }
+      .summary-label { font-size: 13px; color: var(--secondary); font-weight: 600; text-transform: uppercase; }
+      .summary-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
+      .text-primary { color: var(--primary) !important; } .text-success { color: var(--success) !important; } .text-danger { color: var(--danger) !important; }
+      .kpi-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; background: #e1f5fe; color: var(--info); border: 1px solid rgba(0,0,0,0.05);}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: radial-gradient(circle at top right, #1e293b, #0f172a);
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-            padding: 30px 20px;
-        }
+      /* TABLAS ESTANDAR Y POR PARTES */
+      .table-responsive { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: white; overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
+      
+      /* CABECERAS ORDENABLES */
+      th { position: sticky; top: 0; background-color: #f8f9fa; color: var(--secondary); font-size: 12px; text-transform: uppercase; padding: 14px 20px; text-align: left; border-bottom: 2px solid var(--border); transition: background-color 0.2s; z-index: 2;}
+      th.sortable { cursor: pointer; user-select: none; }
+      th.sortable:hover { background-color: #e8eaed; color: var(--primary); }
+      th i { margin-left: 5px; }
+      
+      td { padding: 14px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; transition: background-color 0.2s ease;}
+      tr:hover td { background-color: #f8fafd; }
+      
+      /* FOOTERS DE TABLA (TOTALES) */
+      .table-footer td { background-color: #f4f6f9 !important; border-top: 2px solid #cbd0d6; border-bottom: none; font-size: 14px; }
+      
+      /* JERARQUÍA VISTA PARTES (ACORDEÓN) */
+      .row-group-header { background-color: #f4f6f9 !important; border-top: 2px solid #cbd0d6; border-bottom: 2px solid #cbd0d6; cursor: pointer; transition: background 0.2s;}
+      .row-group-header:hover { background-color: #e8f0fe !important; }
+      .row-group-header td { font-weight: 700; color: var(--text-main); padding: 16px 20px;}
+      .row-sub-item td { padding-left: 45px !important; color: var(--secondary); font-size: 13px; border-bottom: 1px dashed var(--border);}
+      
+      .progress-wrapper { display: flex; align-items: center; gap: 12px; }
+      .progress-bar { flex-grow: 1; background: #e8eaed; height: 6px; border-radius: 3px; overflow: hidden; }
+      .progress-fill { background: var(--primary); height: 100%; width: 0%; transition: width 1.2s cubic-bezier(0.25, 0.8, 0.25, 1); }
+      .pct-text { width: 60px; text-align: right; font-weight: 600; font-size: 13px; color: var(--secondary); }
+      
+      .chart-layout { display: flex; flex-direction: row; gap: 20px; align-items: center; }
+      .chart-canvas-wrapper { flex: 1; height: 350px; position: relative; }
+      .chart-legend-wrapper { flex: 1; max-height: 350px; overflow-y: auto; padding-right: 15px; }
 
-        .container { max-width: 1200px; margin: auto; }
+      .loader { text-align: center; padding: 60px 20px; color: var(--secondary); }
 
-        /* HEADER CINEMÁTICO */
-        .glass-header {
-            background: var(--surface);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            padding: 30px;
-            border-radius: 24px;
-            margin-bottom: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-        }
+      @media (max-width: 650px) {
+        body { padding: 0; background-color: var(--surface); } .container { max-width: 100%; }
+        .action-bar, .view-controls { padding: 15px; flex-direction: column; align-items: stretch;}
+        .view-controls-title { display: none; }
+        .summary-matrix { grid-template-columns: 1fr; gap: 15px; padding: 15px; }
+        .card { border-radius: 0; border-left: none; box-shadow: none; padding: 20px 15px; margin-bottom: 0; border-bottom: 8px solid var(--background);}
+      }
 
-        .brand h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .brand p { color: var(--text-dim); font-size: 13px; margin-top: 4px; text-transform: uppercase; letter-spacing: 2px; }
-
-        .btn-group { display: flex; gap: 12px; }
-        .btn { 
-            padding: 12px 24px; border-radius: 14px; font-weight: 600; font-size: 14px; cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 10px; border: 1px solid transparent;
-        }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4); }
-        .btn-primary:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.5); }
-        .btn-outline { background: var(--glass); color: white; border: 1px solid var(--border); }
-        .btn-outline:hover { background: rgba(255,255,255,0.1); transform: translateY(-3px); }
-
-        /* GRID DASHBOARD */
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 25px; }
-
-        .card { 
-            background: var(--surface); backdrop-filter: blur(10px); border: 1px solid var(--border);
-            border-radius: 24px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-
-        /* KPIs */
-        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
-        .kpi-box { background: var(--glass); padding: 20px; border-radius: 18px; border: 1px solid var(--border); }
-        .kpi-label { font-size: 11px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
-        .kpi-value { font-size: 22px; font-weight: 800; color: #fff; }
-        .kpi-value small { font-size: 14px; color: var(--text-dim); margin-left: 4px; }
-
-        /* TABLAS MODERNAS */
-        .table-container { width: 100%; overflow-x: auto; margin-top: 20px; border-radius: 16px; }
-        table { width: 100%; border-collapse: collapse; color: var(--text-main); }
-        th { text-align: left; padding: 16px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border); letter-spacing: 1px; }
-        td { padding: 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+      /* ==========================================
+         MOTOR NATIVO DE IMPRESIÓN / PDF VECTORIAL
+         ========================================== */
+      @media print {
+        body { background-color: #ffffff !important; padding: 0 !important; color: #000000 !important; }
+        .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
         
-        tr.row-group { cursor: pointer; transition: background 0.3s; }
-        tr.row-group:hover { background: rgba(255,255,255,0.05); }
-        .badge-pill { padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 11px; background: var(--glass); border: 1px solid var(--border); }
-
-        /* PROGRESS BARS */
-        .bar-container { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-top: 8px; position: relative; }
-        .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #60a5fa); width: 0; transition: width 1.5s cubic-bezier(0.65, 0, 0.35, 1); }
-
-        /* VISUALIZADOR */
-        .chart-box { display: flex; flex-direction: column; height: 100%; }
-        #legend-container { margin-top: 20px; display: grid; gap: 10px; }
-        .legend-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--glass); border-radius: 12px; font-size: 12px; }
-
-        /* LOADER */
-        #loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .loader-glow { width: 80px; height: 80px; border: 4px solid var(--glass); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s infinite cubic-bezier(0.5, 0, 0.5, 1); filter: drop-shadow(0 0 15px var(--accent)); }
+        .action-bar, .view-controls { display: none !important; }
+        .card { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 30px !important; }
+        * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; print-color-adjust: exact !important; }
         
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media print {
-            body { background: white !important; color: black !important; padding: 0; }
-            .action-bar, .btn-group, #loader { display: none !important; }
-            .card { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; }
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
+        /* Forzar visibilidad de vistas */
+        #vista-tabla, #vista-partes, #vista-grafico { display: block !important; page-break-inside: auto; }
+        #vista-grafico { display: flex !important; page-break-inside: avoid; margin-top: 30px; }
+        
+        /* Forzar Acordeón abierto */
+        .row-sub-item { display: table-row !important; }
+        .fa-chevron-down, .fa-chevron-right { display: none !important; } 
+        
+        /* Prevención de cortes de tabla */
+        table { page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; } 
+        tfoot { display: table-footer-group; }
+        h2, h3, .summary-matrix { page-break-inside: avoid; }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <div class="container" id="reporte-contenedor">
+      
+      <div id="loader" class="loader fade-in">
+        <i class="fas fa-circle-notch fa-spin fa-3x" style="color: var(--primary);" aria-hidden="true"></i>
+        <p style="margin-top: 20px; font-weight: 500;">Construyendo entorno de datos...</p>
+      </div>
 
-    <div id="loader">
-        <div class="loader-glow"></div>
-        <p style="margin-top: 25px; letter-spacing: 4px; font-size: 11px; font-weight: 800; color: var(--text-dim);">SINCRONIZANDO DATOS</p>
-    </div>
-
-    <div class="container" id="main-content" style="opacity: 0;">
+      <div id="dashboard" style="display: none;" class="fade-in">
         
-        <header class="glass-header anim-entry">
-            <div class="brand">
-                <p id="lblLote">LOTE: -</p>
-                <h1 id="lblProductoDestino">REPORTE DE TRANSFORMACIÓN</h1>
-                <p style="color: var(--accent);"><i class="fas fa-industry"></i> <span id="lblProveedor">-</span></p>
-            </div>
-            <div class="btn-group">
-                <button class="btn btn-outline" onclick="exportarExcel()" id="btnExcel"><i class="fas fa-file-excel"></i> EXCEL PRO</button>
-                <button class="btn btn-primary" onclick="descargarPDF()" id="btnExportar"><i class="fas fa-print"></i> PDF MASTER</button>
-            </div>
-        </header>
-
-        <div class="dashboard-grid">
-            <div class="card anim-entry">
-                <p class="kpi-label">Rendimiento Operativo</p>
-                <div class="kpi-row">
-                    <div class="kpi-box">
-                        <p class="kpi-label">Peso Ingreso</p>
-                        <p class="kpi-value" id="lblPesoTrans">0.00<small>KG</small></p>
-                    </div>
-                    <div class="kpi-box">
-                        <p class="kpi-label">Peso Final</p>
-                        <p class="kpi-value" id="lblPesoTotalIngresos">0.00<small>KG</small></p>
-                    </div>
-                    <div class="kpi-box">
-                        <p class="kpi-label">Eficiencia</p>
-                        <p class="kpi-value" style="color: var(--success);" id="lblEficiencia">0.00<small>%</small></p>
-                    </div>
-                </div>
-            </div>
-            <div class="card anim-entry">
-                <div class="chart-box">
-                    <p class="kpi-label">Balance de Masa</p>
-                    <div style="height: 180px; position: relative;">
-                        <canvas id="donaChart"></canvas>
-                    </div>
-                </div>
-            </div>
+        <div class="action-bar" id="botones-accion">
+          <button class="btn btn-outline" style="color: #1e8e3e; border-color: #1e8e3e;" onclick="exportarExcel()" id="btnExcel">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+          </button>
+          <button class="btn btn-primary" onclick="descargarPDF()" id="btnExportar">
+            <i class="fas fa-file-pdf"></i> Reporte Master (PDF)
+          </button>
         </div>
 
-        <div class="dashboard-grid" style="grid-template-columns: 1fr;">
-            <div class="card anim-entry">
-                <div class="view-controls">
-                    <button class="btn btn-primary" onclick="setVista('tabla')" id="btnTabTabla">INSUMOS</button>
-                    <button class="btn btn-outline" onclick="setVista('partes')" id="btnTabPartes">PARTES PRIMARIAS</button>
-                </div>
-
-                <div id="vista-tabla" class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>Insumo</th><th>Destino</th><th>Masa Total</th><th>Participación</th></tr>
-                        </thead>
-                        <tbody id="tablaBody"></tbody>
-                        <tfoot id="tablaFoot" class="table-footer"></tfoot>
-                    </table>
-                </div>
-
-                <div id="vista-partes" class="table-container" style="display: none;">
-                    <table>
-                        <thead>
-                            <tr><th>Parte Primaria</th><th>Peso Consolidado</th><th>% Masa</th><th>% Rendimiento</th></tr>
-                        </thead>
-                        <tbody id="tablaPartesBody"></tbody>
-                    </table>
-                </div>
+        <div class="card header-card">
+          <h2>
+            <span><i class="fas fa-cube" aria-hidden="true"></i> Producto: <span id="lblProductoDestino">-</span></span>
+            <span style="font-size: 14px; color: var(--secondary); font-weight: normal;"><i class="fas fa-truck"></i> Prov: <span id="lblProveedor">-</span></span>
+          </h2>
+          
+          <div class="summary-matrix" id="matriz-resultados">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="summary-row"><span class="summary-label">Peso de Ingreso:</span><span class="summary-value text-primary"><span id="lblPesoTrans">0.00</span> Kg</span></div>
+              <div class="summary-row"><span class="summary-label">Peso Resultado:</span><span class="summary-value"><span id="lblPesoTotalIngresos">0.00</span> Kg</span></div>
+              <div class="summary-row"><span class="summary-label">Peso Faltante:</span><span class="summary-value text-danger"><span id="lblPesoFaltante">0.00</span> Kg</span></div>
             </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="summary-row"><span class="summary-label">Lote:</span><span class="summary-value" id="lblLote">-</span></div>
+              <div class="summary-row"><span class="summary-label">% Eficiencia (Rend):</span><span class="summary-value text-success"><span id="lblEficiencia">0.00</span> %</span></div>
+              <div class="summary-row"><span class="summary-label">% Merma:</span><span class="summary-value text-danger"><span id="lblMerma">0.00</span> %</span></div>
+            </div>
+          </div>
         </div>
+
+        <div class="card">
+          <div class="view-controls">
+             <p class="view-controls-title"><i class="fas fa-layer-group"></i> Analítica de Desglose</p>
+             <button class="btn btn-primary" onclick="setVista('tabla')" id="btnTabTabla"><i class="fas fa-list"></i> Resumen Insumos</button>
+             <button class="btn btn-outline" onclick="setVista('partes')" id="btnTabPartes"><i class="fas fa-sitemap"></i> Análisis por Partes</button>
+             <button class="btn btn-outline" onclick="setVista('grafico')" id="btnTabGrafico"><i class="fas fa-chart-pie"></i> Visual</button>
+          </div>
+
+          <div id="vista-tabla" class="table-responsive fade-in">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" id="th-material" data-label="Tipo de Item / Material" class="sortable" onclick="ordenarDetalle('material')">Tipo de Item / Material</th>
+                  <th scope="col" id="th-parte" data-label="Parte Asignada" class="sortable" onclick="ordenarDetalle('parte')">Parte Asignada</th>
+                  <th scope="col" id="th-peso" data-label="Peso Total (Kg)" class="sortable" onclick="ordenarDetalle('peso')">Peso Total (Kg)</th>
+                  <th scope="col" id="th-pct" data-label="% Participación" class="sortable" onclick="ordenarDetalle('pct')">% Participación</th>
+                </tr>
+              </thead>
+              <tbody id="tablaBody"></tbody>
+              <tfoot id="tablaFoot" class="table-footer"></tfoot>
+            </table>
+          </div>
+
+          <div id="vista-partes" class="table-responsive fade-in" style="display: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Parte Estructural</th>
+                  <th scope="col">Peso Total (Kg)</th>
+                  <th scope="col">% Participación (Masa Real)</th>
+                  <th scope="col" title="Sobre el peso total de entrada">% Rendimiento (Efectivo)</th>
+                </tr>
+              </thead>
+              <tbody id="tablaPartesBody"></tbody>
+              <tfoot id="tablaPartesFoot" class="table-footer"></tfoot>
+            </table>
+          </div>
+
+          <div id="vista-grafico" class="chart-layout fade-in" style="display: none;">
+            <div class="chart-canvas-wrapper"><canvas id="donaChart"></canvas></div>
+            <div class="chart-legend-wrapper" id="custom-legend"></div>
+          </div>
+
+        </div>
+      </div>
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx1yz9OGqtgWmXYEbiw6rFTfuyx-WM6r2WnW04-szj1EItjsJCRf2CYJelrilklqrfX/exec"; 
-        var datosGlobales = [];
-        var pesoRealGlobal = 0;
-        var pesoRefGlobal = 0;
-        var chartObj = null;
+      // ==========================================
+      // URL DE TU SCRIPT DE GOOGLE (BACKEND HEADLESS)
+      // PEGA AQUÍ LA URL GENERADA EN GOOGLE APPS SCRIPT
+      // ==========================================
+      const WEB_APP_URL = "https://script.google.com/macros/s/TU_SCRIPT_AQUI/exec"; 
 
+      var datosChartObj = null; 
+      
+      // VARIABLES GLOBALES
+      var datosGlobales = [];
+      var pesoRealGlobal = 0;
+      var pesoRefGlobal = 0;
+      var sortConfig = { col: 'peso', asc: false }; 
+
+      // ==========================================
+      // MOTOR MATEMÁTICO ESTRICTO
+      // ==========================================
+      const formatStrict = (value, decimals = 2) => {
+        const num = parseFloat(value) || 0;
+        const strNum = num.toFixed(decimals + 2); 
+        const parts = strNum.split('.');
+        return parts[0] + '.' + parts[1].substring(0, decimals);
+      };
+
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        return String(text).replace(/[&<>"']/g, function(m) {
+          return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m];
+        });
+      }
+
+      // ==========================================
+      // INICIO Y CARGA DE DATOS (MIGRADO A GITHUB / FETCH)
+      // ==========================================
+      window.onload = function() {
+        // Obtenemos el id_trans directamente de la URL (ej. ?id_trans=123)
         const urlParams = new URLSearchParams(window.location.search);
         const idTrans = urlParams.get('id_trans');
 
-        window.onload = () => { if(idTrans) cargarDatos(); else mostrarError("No se detectó ID"); };
-
-        async function cargarDatos() {
-            try {
-                const r = await fetch(`${WEB_APP_URL}?id_trans=${idTrans}`);
-                const res = await r.json();
-                renderUI(res);
-            } catch(e) { mostrarError("Error en API"); }
+        if (!idTrans) {
+          document.getElementById('loader').innerHTML = '<div class="kpi-badge text-danger" style="margin:auto; max-width:max-content;"><i class="fas fa-exclamation-triangle"></i> Error: No se detectó ID de transformación en la URL.</div>';
+          return;
         }
 
-        function renderUI(res) {
-            gsap.to("#loader", { opacity: 0, duration: 0.8, onComplete: () => document.getElementById('loader').remove() });
-            gsap.to("#main-content", { opacity: 1, y: 0, duration: 1, ease: "power4.out" });
+        // Llamada fetch a Google Apps Script
+        fetch(`${WEB_APP_URL}?id_trans=${idTrans}`)
+          .then(response => response.json())
+          .then(data => procesarRespuesta(data))
+          .catch(error => {
+             document.getElementById('loader').innerHTML = '<div class="kpi-badge text-danger" style="margin:auto; max-width:max-content;"><i class="fas fa-exclamation-triangle"></i> Error de conexión: ' + escapeHtml(error.message) + '</div>';
+          });
+      };
 
-            const cab = res.cabecera;
-            document.getElementById('lblProductoDestino').innerText = cab.productoDestino.toUpperCase();
-            document.getElementById('lblProveedor').innerText = cab.proveedor.toUpperCase();
-            document.getElementById('lblLote').innerText = `LOTE: ${cab.lote}`;
+      // ==========================================
+      // CONTROLADOR DE VISTAS (TABS)
+      // ==========================================
+      function setVista(vista) {
+        ['tabla', 'partes', 'grafico'].forEach(v => {
+          document.getElementById('vista-' + v).style.display = 'none';
+          document.getElementById('btnTab' + v.charAt(0).toUpperCase() + v.slice(1)).className = 'btn btn-outline';
+        });
+        const activeDisplay = vista === 'grafico' ? 'flex' : 'block';
+        document.getElementById('vista-' + vista).style.display = activeDisplay;
+        document.getElementById('btnTab' + vista.charAt(0).toUpperCase() + vista.slice(1)).className = 'btn btn-primary';
+      }
 
-            pesoRefGlobal = cab.pesoTotalCarga;
-            pesoRealGlobal = res.pesoTotal;
+      function toggleAcordeon(gIndex) {
+        const icon = document.getElementById(`icon-grp-${gIndex}`);
+        const rows = document.querySelectorAll(`.sub-row-grp-${gIndex}`);
+        const isCollapsed = icon.classList.contains('fa-chevron-right');
 
-            document.getElementById('lblPesoTrans').innerHTML = `${pesoRefGlobal.toFixed(2)}<small>KG</small>`;
-            document.getElementById('lblPesoTotalIngresos').innerHTML = `${pesoRealGlobal.toFixed(2)}<small>KG</small>`;
-            document.getElementById('lblEficiencia').innerHTML = `${((pesoRealGlobal/pesoRefGlobal)*100).toFixed(2)}<small>%</small>`;
+        if(isCollapsed) {
+            icon.classList.replace('fa-chevron-right', 'fa-chevron-down');
+            rows.forEach(r => r.style.display = 'table-row');
+        } else {
+            icon.classList.replace('fa-chevron-down', 'fa-chevron-right');
+            rows.forEach(r => r.style.display = 'none');
+        }
+      }
 
-            datosGlobales = res.datos;
-            dibujarTablas();
+      function ordenarDetalle(columna) {
+        if (sortConfig.col === columna) { sortConfig.asc = !sortConfig.asc; } 
+        else { sortConfig.col = columna; sortConfig.asc = false; }
+        renderizarTablas(); 
+      }
+
+      // ==========================================
+      // PROCESAMIENTO INICIAL DEL SERVIDOR
+      // ==========================================
+      function procesarRespuesta(res) {
+        document.getElementById('loader').style.display = 'none';
+        if(!res || res.exito === false) {
+           document.body.innerHTML = '<div class="container fade-in" style="padding:20px;"><div class="kpi-badge text-danger" style="padding: 20px;"><i class="fas fa-exclamation-triangle fa-2x"></i> <span>Error: ' + escapeHtml(res ? res.mensaje : 'Sin datos del servidor') + '</span></div></div>';
+           return;
         }
 
-        function dibujarTablas() {
-            const body = document.getElementById('tablaBody');
-            body.innerHTML = '';
+        try {
+          document.getElementById('dashboard').style.display = 'block';
+          
+          const cabecera = res.cabecera || {};
+          const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
+          
+          // 1. Extraemos los valores para usarlos en el DOM y en el Título
+          const producto = cabecera.productoDestino || '-';
+          const proveedor = cabecera.proveedor || '-';
+          const lote = cabecera.lote || '-';
+          
+          safeSet('lblProductoDestino', escapeHtml(producto));
+          safeSet('lblProveedor', escapeHtml(proveedor));
+          safeSet('lblLote', escapeHtml(lote));
+          
+          document.title = `Reporte_${producto}_${lote}_${proveedor}`;
+
+          pesoRefGlobal = parseFloat(formatStrict(parseFloat(cabecera.pesoTotalCarga) || 0, 2));
+          pesoRealGlobal = parseFloat(formatStrict(parseFloat(res.pesoTotal) || 0, 2));
+
+          let mermaFaltante = pesoRefGlobal - pesoRealGlobal;
+          if (mermaFaltante < 0) mermaFaltante = 0; 
+          const eficienciaPct = pesoRefGlobal > 0 ? (pesoRealGlobal / pesoRefGlobal) * 100 : 0;
+          const mermaPct = pesoRefGlobal > 0 ? (mermaFaltante / pesoRefGlobal) * 100 : 0;
+
+          safeSet('lblPesoTrans', formatStrict(pesoRefGlobal, 2));
+          safeSet('lblPesoTotalIngresos', formatStrict(pesoRealGlobal, 2));
+          safeSet('lblPesoFaltante', formatStrict(mermaFaltante, 2));
+          safeSet('lblEficiencia', formatStrict(eficienciaPct, 2));
+          safeSet('lblMerma', formatStrict(mermaPct, 2));
+
+          datosGlobales = Array.isArray(res.datos) ? res.datos : [];
+          renderizarTablas();
+
+        } catch(e) {
+          console.error("Crash crítico JS:", e);
+          document.getElementById('dashboard').innerHTML = `<div class="card" style="border-left: 6px solid var(--danger);"><h3 style="color:var(--danger)">Error</h3><p>${e.message}</p></div>`;
+        }
+      }
+
+      // ==========================================
+      // MOTOR DE RENDERIZADO Y AGRUPACIÓN
+      // ==========================================
+      function renderizarTablas() {
+        const tbodyDetalle = document.getElementById('tablaBody');
+        const tfootDetalle = document.getElementById('tablaFoot');
+        const tbodyPartes = document.getElementById('tablaPartesBody');
+        const tfootPartes = document.getElementById('tablaPartesFoot');
+        
+        const chartLabels = []; const chartData = [];
+        
+        // Estructuras de agrupación
+        const gruposMateriales = {}; 
+        const gruposPartes = {};
+
+        tbodyDetalle.innerHTML = ''; tfootDetalle.innerHTML = '';
+        tbodyPartes.innerHTML = ''; tfootPartes.innerHTML = '';
+
+        if(datosGlobales.length === 0) {
+            tbodyDetalle.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--secondary);">No hay registros de insumos.</td></tr>';
+            tbodyPartes.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--secondary);">No hay registros de insumos.</td></tr>';
+            return;
+        }
+
+        // 1. DOBLE AGRUPACIÓN MATEMÁTICA EN RAM
+        datosGlobales.forEach(item => {
+            const pesoItem = parseFloat(item.peso) || 0;
             
-            // Agrupación de Insumos
-            const matG = {};
-            datosGlobales.forEach(d => {
-                matG[d.material] = matG[d.material] || { p: 0, parts: new Set() };
-                matG[d.material].p += d.peso;
-                matG[d.material].parts.add(d.parte);
-            });
+            // A. Agrupación por Tipo de Item (Material)
+            const matKey = item.material || 'Desconocido';
+            if(!gruposMateriales[matKey]) gruposMateriales[matKey] = { material: matKey, partes: new Set(), peso: 0 };
+            if(item.parte) gruposMateriales[matKey].partes.add(item.parte);
+            gruposMateriales[matKey].peso += pesoItem;
 
-            Object.keys(matG).forEach((k, i) => {
-                const row = document.createElement('tr');
-                const pct = (matG[k].p / pesoRealGlobal) * 100;
-                row.innerHTML = `
-                    <td><b>${k}</b></td>
-                    <td><span class="badge-pill">${Array.from(matG[k].parts).join(', ')}</span></td>
-                    <td>${matG[k].p.toFixed(2)} Kg</td>
-                    <td>
-                        <div class="progress-wrapper">
-                            <div class="pct-text" style="font-weight:800; font-size:12px; margin-bottom:4px;">${pct.toFixed(2)}%</div>
-                            <div class="bar-container"><div class="bar-fill" style="width: ${pct}%"></div></div>
-                        </div>
-                    </td>
-                `;
-                body.appendChild(row);
-            });
+            // B. Agrupación por Partes Primarias (Estructural)
+            const parteKey = item.parte || 'GENERAL';
+            if(!gruposPartes[parteKey]) gruposPartes[parteKey] = { peso: 0, items: [] };
+            gruposPartes[parteKey].peso += pesoItem;
+            gruposPartes[parteKey].items.push({ material: matKey, peso: pesoItem, pesoStr: formatStrict(pesoItem, 2) });
+        });
 
-            // Agrupación de Partes Primarias
-            const partBody = document.getElementById('tablaPartesBody');
-            partBody.innerHTML = '';
-            const pG = {};
-            datosGlobales.forEach(d => {
-                pG[d.parte] = (pG[d.parte] || 0) + d.peso;
-            });
+        // ===============================================
+        // CONSTRUCCIÓN VISTA 1: RESUMEN DE INSUMOS
+        // ===============================================
+        let datosOrdenados = Object.values(gruposMateriales).map(g => ({
+            material: g.material,
+            parte: Array.from(g.partes).join(', ') || 'GENERAL',
+            peso: g.peso
+        }));
 
-            const labels = []; const values = [];
-            Object.keys(pG).forEach(k => {
-                labels.push(k); values.push(pG[k]);
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><b>${k}</b></td>
-                    <td>${pG[k].toFixed(2)} Kg</td>
-                    <td>${((pG[k]/pesoRealGlobal)*100).toFixed(2)}%</td>
-                    <td><span class="badge-pill" style="color:var(--success)">${((pG[k]/pesoRefGlobal)*100).toFixed(2)}%</span></td>
-                `;
-                partBody.appendChild(row);
-            });
+        // Aplicar Sort Interactivo
+        datosOrdenados.sort((a, b) => {
+            let valA, valB;
+            if (sortConfig.col === 'material') { valA = (a.material||'').toUpperCase(); valB = (b.material||'').toUpperCase(); }
+            else if (sortConfig.col === 'parte') { valA = (a.parte||'').toUpperCase(); valB = (b.parte||'').toUpperCase(); }
+            else if (sortConfig.col === 'peso' || sortConfig.col === 'pct') { valA = a.peso; valB = b.peso; }
+            if (valA < valB) return sortConfig.asc ? -1 : 1;
+            if (valA > valB) return sortConfig.asc ? 1 : -1;
+            return 0;
+        });
 
-            initChart(labels, values);
+        // Interfaz del Sort
+        ['material', 'parte', 'peso', 'pct'].forEach(col => {
+            const el = document.getElementById('th-' + col);
+            if(el) { el.style.color = 'var(--secondary)'; el.innerHTML = el.dataset.label + ' <i class="fas fa-sort" style="opacity:0.3"></i>'; }
+        });
+        const activeTh = document.getElementById('th-' + sortConfig.col);
+        if(activeTh) {
+            activeTh.style.color = 'var(--primary)';
+            activeTh.innerHTML = activeTh.dataset.label + (sortConfig.asc ? ' <i class="fas fa-sort-up"></i>' : ' <i class="fas fa-sort-down"></i>');
         }
 
-        function initChart(l, v) {
-            const ctx = document.getElementById('donaChart').getContext('2d');
-            chartObj = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: l, datasets: [{ data: v, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWeight: 0 }] },
-                options: { cutout: '80%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
-            });
-        }
+        let sumPesoDetalle = 0;
+        datosOrdenados.forEach((item, index) => {
+            const pesoItemStr = formatStrict(item.peso, 2);
+            const pct = pesoRealGlobal > 0 ? ((item.peso / pesoRealGlobal) * 100) : 0;
+            const pctStrict = formatStrict(pct, 2);
+            
+            sumPesoDetalle += item.peso;
 
-        async function exportarExcel() {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+            <td><strong>${escapeHtml(item.material)}</strong></td>
+            <td><span style="font-size:12px; color:var(--secondary); background:#f4f6f9; padding:3px 8px; border-radius:4px;">${escapeHtml(item.parte)}</span></td>
+            <td>${pesoItemStr}</td>
+            <td>
+                <div class="progress-wrapper">
+                <div class="progress-bar"><div class="progress-fill" id="bar-${index}" style="width: 0%"></div></div>
+                <div class="pct-text">${pctStrict}%</div>
+                </div>
+            </td>`;
+            tbodyDetalle.appendChild(tr);
+            requestAnimationFrame(() => setTimeout(() => { const el = document.getElementById(`bar-${index}`); if(el) el.style.width = `${pctStrict}%`; }, 100 + (index * 20)));
+        });
+
+        // Inyección de TFOOT Detalle Insumos
+        const totalPctDetalleStr = pesoRealGlobal > 0 ? formatStrict((sumPesoDetalle / pesoRealGlobal) * 100, 2) : "0.00";
+        tfootDetalle.innerHTML = `
+            <tr>
+                <td colspan="2" style="text-align:right; font-weight:bold; color:var(--text-main); font-size:13px;">TOTAL INSUMOS EXTRAÍDOS:</td>
+                <td style="font-weight:bold; color:var(--primary); font-size:14px;">${formatStrict(sumPesoDetalle, 2)}</td>
+                <td style="font-weight:bold; color:var(--primary);"><div class="pct-text">${totalPctDetalleStr}%</div></td>
+            </tr>`;
+
+
+        // ===============================================
+        // CONSTRUCCIÓN VISTA 2: PARTES ESTRUCTURALES
+        // ===============================================
+        const arrayGrupos = Object.keys(gruposPartes).map(k => ({ parte: k, peso: gruposPartes[k].peso, items: gruposPartes[k].items }));
+        arrayGrupos.sort((a,b) => b.peso - a.peso);
+
+        let sumPesoPartes = 0;
+        arrayGrupos.forEach((g, gIndex) => {
+            chartLabels.push(g.parte); chartData.push(g.peso);
+            sumPesoPartes += g.peso;
+
+            const partPct = pesoRealGlobal > 0 ? (g.peso / pesoRealGlobal) * 100 : 0;
+            const rendPct = pesoRefGlobal > 0 ? (g.peso / pesoRefGlobal) * 100 : 0; 
+            
+            const partPctStr = formatStrict(partPct, 2);
+            const rendPctStr = formatStrict(rendPct, 2);
+
+            const trGroup = document.createElement('tr');
+            trGroup.className = 'row-group-header';
+            trGroup.onclick = () => toggleAcordeon(gIndex); 
+            trGroup.innerHTML = `
+                <td>
+                    <i class="fas fa-chevron-down" id="icon-grp-${gIndex}" style="margin-right:8px; color:var(--primary); transition: transform 0.2s;"></i> 
+                    <i class="fas fa-layer-group" style="margin-right:4px; color:var(--primary);"></i> ${escapeHtml(g.parte)}
+                </td>
+                <td>${formatStrict(g.peso, 2)}</td>
+                <td>
+                <div class="progress-wrapper">
+                    <div class="progress-bar"><div class="progress-fill" id="bar-grp-${gIndex}" style="width: 0%"></div></div>
+                    <div class="pct-text">${partPctStr}%</div>
+                </div>
+                </td>
+                <td><span class="kpi-badge">${rendPctStr}%</span></td>
+            `;
+            tbodyPartes.appendChild(trGroup);
+            requestAnimationFrame(() => setTimeout(() => { const el = document.getElementById(`bar-grp-${gIndex}`); if(el) el.style.width = `${partPctStr}%`; }, 200));
+
+            g.items.forEach(item => {
+                const trSub = document.createElement('tr');
+                trSub.className = `row-sub-item sub-row-grp-${gIndex}`; 
+                const iPartPctStr = formatStrict(pesoRealGlobal > 0 ? (item.peso / pesoRealGlobal) * 100 : 0, 2);
+                trSub.innerHTML = `
+                    <td><i class="fas fa-level-up-alt fa-rotate-90" style="margin-right:8px; opacity:0.5;"></i> ${escapeHtml(item.material)}</td>
+                    <td>${item.pesoStr}</td>
+                    <td><span style="opacity:0.7;">${iPartPctStr}%</span></td>
+                    <td></td>
+                `;
+                tbodyPartes.appendChild(trSub);
+            });
+        });
+
+        // Inyección de TFOOT Partes
+        const totalPartPctStr = pesoRealGlobal > 0 ? formatStrict((sumPesoPartes / pesoRealGlobal) * 100, 2) : "0.00";
+        const totalRendPctStr = pesoRefGlobal > 0 ? formatStrict((sumPesoPartes / pesoRefGlobal) * 100, 2) : "0.00";
+        tfootPartes.innerHTML = `
+            <tr>
+                <td style="text-align:right; font-weight:bold; color:var(--text-main); font-size:13px;">TOTAL MATERIA ESTRUCTURAL:</td>
+                <td style="font-weight:bold; color:var(--primary); font-size:14px;">${formatStrict(sumPesoPartes, 2)}</td>
+                <td style="font-weight:bold; color:var(--primary);"><div class="pct-text">${totalPartPctStr}%</div></td>
+                <td style="font-weight:bold; color:var(--success);"><span class="kpi-badge" style="background:#e6f4ea;">${totalRendPctStr}%</span></td>
+            </tr>`;
+
+        // ===============================================
+        // CONSTRUCCIÓN VISTA 3: GRÁFICO (Chart.js)
+        // ===============================================
+        generarGrafico(chartLabels, chartData, pesoRealGlobal);
+      }
+
+      function generarGrafico(labels, data, totalPeso) {
+        var ctx = document.getElementById('donaChart').getContext('2d');
+        var bgColors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00bcd4', '#ff9800', '#9e9e9e', '#3f51b5', '#e91e63'];
+        if (datosChartObj) datosChartObj.destroy();
+
+        datosChartObj = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: bgColors, borderWidth: 2, borderColor: '#ffffff'}] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { 
+                    var val = c.raw || 0; var pct = totalPeso > 0 ? ((val / totalPeso) * 100) : 0;
+                    return ` ${formatStrict(val, 2)} Kg | ${formatStrict(pct, 2)}%`;
+                }}}}, animation: { animateScale: true }
+            }
+        });
+
+        var legendHTML = '<div style="display:flex; flex-direction:column; gap:8px;">';
+        for (var i = 0; i < labels.length; i++) {
+            var color = bgColors[i % bgColors.length];
+            var pct = totalPeso > 0 ? ((data[i] / totalPeso) * 100) : 0;
+            legendHTML += `
+                <div style="display:flex; align-items:center; padding:8px 10px; background:#f8fafd; border-radius:6px; margin-bottom:5px;">
+                    <span style="width:12px; height:12px; background:${color}; border-radius:50%; margin-right:12px; flex-shrink:0;"></span>
+                    <span style="flex-grow:1; line-height:1.2; font-size:13px; color:var(--secondary);">
+                        <strong style="color:#202124;">${escapeHtml(labels[i])}</strong><br>${formatStrict(data[i], 2)} Kg
+                    </span>
+                    <span style="font-weight:700; color:var(--primary); font-size:14px;">${formatStrict(pct, 2)}%</span>
+                </div>`;
+        }
+        document.getElementById('custom-legend').innerHTML = legendHTML + '</div>';
+      }
+
+      // ==========================================
+      // MOTOR DE EXPORTACIÓN NATIVO A .XLSX (ExcelJS)
+      // ==========================================
+      async function exportarExcel() {
+        const btnExcel = document.getElementById('btnExcel');
+        const originalText = btnExcel.innerHTML;
+        btnExcel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        btnExcel.disabled = true;
+
+        try {
+            const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
+            
+            // 1. CONSTRUCCIÓN DE LA NOMENCLATURA ESTRICTA
+            const producto = safeGet('lblProductoDestino').toUpperCase(); 
+            const lote = safeGet('lblLote').toUpperCase();
+            const proveedor = safeGet('lblProveedor').toUpperCase();
+            const nombreArchivo = `TRANSFORMACION_${producto}_${lote}_${proveedor}`;
+            
             const wb = new ExcelJS.Workbook();
-            const ws = wb.addWorksheet('Reporte Master');
-            const nom = `TRANSFORMACION_${document.getElementById('lblProductoDestino').innerText}_${document.getElementById('lblLote').innerText}`;
+            const ws = wb.addWorksheet('Reporte de Desglose');
 
-            // ESTILOS PRO
-            const titleSt = { font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 14 }, fill: { type: 'pattern', pattern:'solid', fgColor:{argb:'FF0F172A'} } };
-            const subSt = { font: { bold: true, color: { argb: 'FFFFFFFF' } }, fill: { type: 'pattern', pattern:'solid', fgColor:{argb:'FF3B82F6'} } };
+            const headerStyle = { font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A73E8' } }, alignment: { vertical: 'middle', horizontal: 'center' } };
+            const subHeaderStyle = { font: { bold: true, color: { argb: 'FFFFFFFF' } }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5F6368' } }, alignment: { vertical: 'middle', horizontal: 'center' } };
+            const footerStyle = { font: { bold: true }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F6F9' } } };
 
-            // TABLA 1: RESUMEN EJECUTIVO
-            ws.addRow(['1. RESUMEN EJECUTIVO']).font = {bold:true, size:12};
-            ws.addRow(['PRODUCTO', document.getElementById('lblProductoDestino').innerText]);
-            ws.addRow(['PROVEEDOR', document.getElementById('lblProveedor').innerText]);
-            ws.addRow(['LOTE', document.getElementById('lblLote').innerText]);
-            ws.addRow(['PESO INICIAL', parseFloat(document.getElementById('lblPesoTrans').innerText)]);
-            ws.addRow(['PESO FINAL', parseFloat(document.getElementById('lblPesoTotalIngresos').innerText)]);
-            ws.addRow(['RENDIMIENTO', document.getElementById('lblEficiencia').innerText]);
-            ws.addRow([]);
+            ws.mergeCells('A1:D1'); ws.getCell('A1').value = `REPORTE DE TRANSFORMACIÓN: ${producto}`; ws.getCell('A1').style = headerStyle; ws.getRow(1).height = 30;
 
-            // TABLA 2: RENDIMIENTO ESTRUCTURAL (PARTES)
-            ws.addRow(['2. RENDIMIENTO POR PARTES PRIMARIAS']).font = {bold:true, size:12};
-            const h2 = ws.addRow(['PARTE PRIMARIA', 'PESO KG', '% MASA', '% RENDIMIENTO']);
-            h2.eachCell(c => c.style = subSt);
-            document.querySelectorAll('#tablaPartesBody tr').forEach(r => {
-                const c = r.querySelectorAll('td');
-                ws.addRow([c[0].innerText, parseFloat(c[1].innerText), c[2].innerText, c[3].innerText]);
+            ws.addRow(['Peso de Ingreso:', parseFloat(safeGet('lblPesoTrans')), 'Lote:', lote]);
+            ws.addRow(['Peso Resultado:', parseFloat(safeGet('lblPesoTotalIngresos')), '% Eficiencia (Rendimiento):', parseFloat(safeGet('lblEficiencia'))]);
+            ws.addRow(['Peso Faltante:', parseFloat(safeGet('lblPesoFaltante')), '% Merma:', parseFloat(safeGet('lblMerma'))]);
+            ws.addRow([]); 
+
+            ['A2','C2','A3','C3','A4','C4'].forEach(celda => { ws.getCell(celda).font = { bold: true }; ws.getCell(celda).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFD' } }; });
+
+            // 1. Exportar Tabla de Partes Estructurales
+            ws.addRow(['RESUMEN DE RENDIMIENTO POR PARTE ESTRUCTURAL']).font = { bold: true, size: 12 };
+            ws.mergeCells(`A${ws.lastRow.number}:D${ws.lastRow.number}`);
+            const headerPartes = ws.addRow(['PARTE PRIMARIA', 'PESO (Kg)', '% PARTICIPACIÓN', '% RENDIMIENTO']);
+            headerPartes.eachCell(c => c.style = subHeaderStyle);
+
+            document.querySelectorAll('#tablaPartesBody tr.row-group-header').forEach(fila => {
+              const cols = fila.querySelectorAll('td');
+              if(cols.length >= 4) {
+                ws.addRow([ cols[0].innerText.trim(), parseFloat(cols[1].innerText.trim()) || 0, parseFloat(cols[2].innerText.replace('%','').trim()) || 0, parseFloat(cols[3].innerText.replace('%','').trim()) || 0 ]);
+              }
             });
-            ws.addRow([]);
+            
+            // Inyectar FOOTER de Partes
+            document.querySelectorAll('#tablaPartesFoot tr').forEach(fila => {
+              const cols = fila.querySelectorAll('td');
+              if(cols.length >= 4) {
+                const r = ws.addRow([ cols[0].innerText.trim(), parseFloat(cols[1].innerText.trim()) || 0, parseFloat(cols[2].innerText.replace('%','').trim()) || 0, parseFloat(cols[3].innerText.replace('%','').trim()) || 0 ]);
+                r.eachCell(c => c.style = footerStyle);
+              }
+            });
+            ws.addRow([]); 
 
-            // TABLA 3: DESGLOSE OPERATIVO (INSUMOS)
-            ws.addRow(['3. DESGLOSE OPERATIVO DE INSUMOS']).font = {bold:true, size:12};
-            const h3 = ws.addRow(['MATERIAL', 'DESTINOS', 'MASA TOTAL', '% PARTICIPACIÓN']);
-            h3.eachCell(c => c.style = subSt);
-            document.querySelectorAll('#tablaBody tr').forEach(r => {
-                const c = r.querySelectorAll('td');
-                ws.addRow([c[0].innerText, c[1].innerText, parseFloat(c[2].innerText), c[3].querySelector('.pct-text').innerText]);
+            // 2. Exportar Tabla de Detalle Insumos (Por Tipo de Item)
+            ws.addRow(['RESUMEN POR TIPO DE ITEM (MATERIAL)']).font = { bold: true, size: 12 };
+            ws.mergeCells(`A${ws.lastRow.number}:D${ws.lastRow.number}`);
+            const headerDetalle = ws.addRow(['DESCRIPCIÓN DEL MATERIAL', 'PARTES INVOLUCRADAS', 'PESO TOTAL (Kg)', '% DE PARTICIPACIÓN']);
+            headerDetalle.eachCell(c => c.style = subHeaderStyle);
+
+            document.querySelectorAll('#tablaBody tr').forEach(fila => {
+              const cols = fila.querySelectorAll('td');
+              if(cols.length >= 4) {
+                ws.addRow([ cols[0].innerText.trim(), cols[1].innerText.trim(), parseFloat(cols[2].innerText.trim()) || 0, parseFloat(cols[3].innerText.replace('%','').trim()) || 0 ]);
+              }
             });
 
-            ws.columns.forEach(c => c.width = 25);
-            const b = await wb.xlsx.writeBuffer();
-            saveAs(new Blob([b]), `${nom}.xlsx`);
-        }
+            // Inyectar FOOTER de Detalle
+            document.querySelectorAll('#tablaFoot tr').forEach(fila => {
+              const cols = fila.querySelectorAll('td');
+              if(cols.length >= 3) {
+                const r = ws.addRow([ cols[0].innerText.trim(), '', parseFloat(cols[1].innerText.trim()) || 0, parseFloat(cols[2].innerText.replace('%','').trim()) || 0 ]);
+                ws.mergeCells(`A${r.number}:B${r.number}`);
+                r.eachCell(c => c.style = footerStyle);
+              }
+            });
 
-        function descargarPDF() { window.print(); }
-        function setVista(v) {
-            document.getElementById('vista-tabla').style.display = v==='tabla' ? 'block' : 'none';
-            document.getElementById('vista-partes').style.display = v==='partes' ? 'block' : 'none';
+            ws.columns.forEach((column, index) => {
+                column.width = index === 0 ? 45 : 22; 
+                column.eachCell({ includeEmpty: false }, (cell, rowNumber) => { if (typeof cell.value === 'number' && rowNumber > 1) cell.numFmt = '#,##0.00'; });
+            });
+
+            const buffer = await wb.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            // 2. GUARDAR EXCEL CON LA NOMENCLATURA
+            saveAs(blob, `${nombreArchivo}.xlsx`);
+
+        } catch (error) {
+            console.error("Error generando Excel NATIVO:", error);
+            alert("Hubo un error compilando el archivo de Excel. Revisa la consola.");
+        } finally {
+            btnExcel.innerHTML = originalText; btnExcel.disabled = false;
         }
-        function mostrarError(m) { document.getElementById('loader').innerHTML = `<p style="color:var(--danger)">${m}</p>`; }
+      }
+
+      // ==========================================
+      // MOTOR DE EXPORTACIÓN A PDF (IMPRESIÓN NATIVA)
+      // ==========================================
+      function descargarPDF() {
+        const btnExportar = document.getElementById('btnExportar');
+        const originalText = btnExportar.innerHTML;
+        btnExportar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando Documento...';
+        btnExportar.disabled = true;
+
+        const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
+        
+        // 1. CONSTRUCCIÓN DE LA NOMENCLATURA ESTRICTA
+        const producto = safeGet('lblProductoDestino').toUpperCase(); 
+        const lote = safeGet('lblLote').toUpperCase();
+        const proveedor = safeGet('lblProveedor').toUpperCase();
+        const nombreArchivo = `TRANSFORMACION_${producto}_${lote}_${proveedor}`;
+
+        const tituloOriginal = document.title;
+        // Inyectamos el nombre forzado para el diálogo de impresión
+        document.title = nombreArchivo;
+
+        let vistaActiva = 'tabla';
+        if (document.getElementById('vista-partes').style.display === 'block') vistaActiva = 'partes';
+        if (document.getElementById('vista-grafico').style.display === 'flex') vistaActiva = 'grafico';
+
+        const filasHijas = document.querySelectorAll('.row-sub-item');
+        const displayAcordeones = [];
+        filasHijas.forEach(fila => { displayAcordeones.push(fila.style.display); fila.style.display = 'table-row'; });
+
+        document.getElementById('vista-tabla').style.display = 'block';
+        document.getElementById('vista-partes').style.display = 'block';
+        document.getElementById('vista-grafico').style.display = 'flex';
+        
+        if (datosChartObj) datosChartObj.resize();
+
+        setTimeout(() => {
+            window.print(); 
+            
+            document.title = tituloOriginal; 
+            ['tabla', 'partes', 'grafico'].forEach(v => { document.getElementById('vista-' + v).style.display = 'none'; });
+            document.getElementById('vista-' + vistaActiva).style.display = vistaActiva === 'grafico' ? 'flex' : 'block';
+            filasHijas.forEach((fila, i) => { fila.style.display = displayAcordeones[i]; });
+
+            btnExportar.innerHTML = originalText; btnExportar.disabled = false;
+        }, 500); 
+      }
     </script>
-</body>
+  </body>
 </html>
