@@ -185,9 +185,9 @@
         <div class="card">
           <div class="view-controls">
              <p class="view-controls-title"><i class="fas fa-layer-group"></i> Analítica de Desglose</p>
-             <button class="btn btn-primary" onclick="setVista('tabla')" id="btnTabTabla"><i class="fas fa-list"></i> Resumen Insumos</button>
+             <button class="btn btn-primary" onclick="setVista('tabla')" id="btnTabTabla"><i class="fas fa-list"></i> Resumen de Items</button>
              <button class="btn btn-outline" onclick="setVista('partes')" id="btnTabPartes"><i class="fas fa-sitemap"></i> Análisis por Partes</button>
-             <button class="btn btn-outline" onclick="setVista('grafico')" id="btnTabGrafico"><i class="fas fa-chart-pie"></i> Visual</button>
+             <button class="btn btn-outline" onclick="setVista('grafico')" id="btnTabGrafico"><i class="fas fa-chart-pie"></i> Graficos</button>
           </div>
 
           <div id="vista-tabla" class="table-responsive fade-in">
@@ -211,7 +211,7 @@
                 <tr>
                   <th scope="col">Parte Estructural</th>
                   <th scope="col">Peso Total (Kg)</th>
-                  <th scope="col">% Participación (Masa Real)</th>
+                  <th scope="col">% Participación (Resultado)</th>
                   <th scope="col" title="Sobre el peso total de entrada">% Rendimiento (Efectivo)</th>
                 </tr>
               </thead>
@@ -356,7 +356,7 @@
           safeSet('lblProveedor', escapeHtml(proveedor));
           safeSet('lblLote', escapeHtml(lote));
           
-          document.title = `Reporte_${producto}_${lote}_${proveedor}`;
+          document.title = `${producto}_${lote}_${proveedor}`;
 
           pesoRefGlobal = parseFloat(formatStrict(parseFloat(cabecera.pesoTotalCarga) || 0, 2));
           pesoRealGlobal = parseFloat(formatStrict(parseFloat(res.pesoTotal) || 0, 2));
