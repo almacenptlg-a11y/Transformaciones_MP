@@ -89,7 +89,7 @@
         .chart-canvas-wrapper { height: 250px; width: 100%; }
       }
 
-      /* ==========================================
+     /* ==========================================
          MOTOR NATIVO DE IMPRESIÓN / PDF VECTORIAL
          ========================================== */
       @media print {
@@ -103,8 +103,32 @@
         /* Forzar visibilidad de vistas */
         #vista-tabla, #vista-partes, #vista-grafico { display: block !important; page-break-inside: auto; }
         #vista-grafico { margin-top: 30px; }
-        .chart-layout { display: flex !important; page-break-inside: avoid; margin-bottom: 40px !important; }
+        
+        /* ======== SOLUCIÓN DE LEYENDAS LARGAS ======== */
+        .chart-layout { 
+            display: flex !important; 
+            flex-direction: column !important; /* Apila el gráfico arriba y la leyenda abajo */
+            page-break-inside: auto !important; /* Permite que el bloque se divida en varias páginas */
+            margin-bottom: 40px !important; 
+        }
+        .chart-canvas-wrapper { 
+            height: 350px !important; 
+            width: 100% !important; 
+            page-break-inside: avoid !important; /* Evita que la dona se corte por la mitad */
+            margin-bottom: 20px !important;
+        }
+        .chart-legend-wrapper { 
+            max-height: none !important; /* Quita el límite de altura para imprimir */
+            overflow: visible !important; /* Muestra todos los items ocultos */
+            width: 100% !important;
+            page-break-inside: auto !important; /* Permite que la lista salte a la siguiente hoja */
+        }
+        /* Evita que un item de la leyenda se corte a la mitad horizontalmente en el salto de página */
+        .chart-legend-wrapper > div > div {
+            page-break-inside: avoid !important;
+        }
         .grafico-titulo { page-break-after: avoid; }
+        /* ============================================= */
         
         /* Forzar Acordeón abierto */
         .row-sub-item { display: table-row !important; }
