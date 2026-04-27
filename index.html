@@ -357,7 +357,7 @@
         }
       }
 
-      // ==========================================
+// ==========================================
       // MOTOR DE RENDERIZADO Y AGRUPACIÓN
       // ==========================================
       function renderizarTablas() {
@@ -408,7 +408,7 @@
             peso: g.peso
         }));
 
-        // Preparar la data para el Gráfico de Insumos (ordenada por peso mayor a menor)
+        // Preparar la data para el Gráfico de Insumos
         let datosInsumosChart = [...datosOrdenados].sort((a,b) => b.peso - a.peso);
         datosInsumosChart.forEach(item => {
             insumosLabels.push(item.material);
@@ -438,12 +438,15 @@
         }
 
         let sumPesoDetalle = 0;
+        let sumPctDetalleVis = 0; // ACUMULADOR DE SUMA VISUAL
+
         datosOrdenados.forEach((item, index) => {
             const pesoItemStr = formatStrict(item.peso, 2);
             const pct = pesoRealGlobal > 0 ? ((item.peso / pesoRealGlobal) * 100) : 0;
             const pctStrict = formatStrict(pct, 2);
             
             sumPesoDetalle += item.peso;
+            sumPctDetalleVis += parseFloat(pctStrict); // Sumamos exactamente lo que ve el usuario
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -460,7 +463,7 @@
             requestAnimationFrame(() => setTimeout(() => { const el = document.getElementById(`bar-${index}`); if(el) el.style.width = `${pctStrict}%`; }, 100 + (index * 20)));
         });
 
-        const totalPctDetalleStr = pesoRealGlobal > 0 ? formatStrict((sumPesoDetalle / pesoRealGlobal) * 100, 2) : "0.00";
+        const totalPctDetalleStr = sumPctDetalleVis.toFixed(2); // Resultado matemático exacto de la vista
         tfootDetalle.innerHTML = `
             <tr>
                 <td colspan="2" style="text-align:right; font-weight:bold; color:var(--text-main); font-size:13px;">TOTAL INSUMOS EXTRAÍDOS:</td>
@@ -476,6 +479,9 @@
         arrayGrupos.sort((a,b) => b.peso - a.peso);
 
         let sumPesoPartes = 0;
+        let sumPartPctVis = 0; // ACUMULADOR DE SUMA VISUAL
+        let sumRendPctVis = 0; // ACUMULADOR DE SUMA VISUAL
+
         arrayGrupos.forEach((g, gIndex) => {
             partesLabels.push(g.parte); partesData.push(g.peso);
             sumPesoPartes += g.peso;
@@ -485,6 +491,9 @@
             
             const partPctStr = formatStrict(partPct, 2);
             const rendPctStr = formatStrict(rendPct, 2);
+
+            sumPartPctVis += parseFloat(partPctStr); // Sumamos exactamente lo que ve el usuario
+            sumRendPctVis += parseFloat(rendPctStr); // Sumamos exactamente lo que ve el usuario
 
             const trGroup = document.createElement('tr');
             trGroup.className = 'row-group-header';
@@ -520,8 +529,8 @@
             });
         });
 
-        const totalPartPctStr = pesoRealGlobal > 0 ? formatStrict((sumPesoPartes / pesoRealGlobal) * 100, 2) : "0.00";
-        const totalRendPctStr = pesoRefGlobal > 0 ? formatStrict((sumPesoPartes / pesoRefGlobal) * 100, 2) : "0.00";
+        const totalPartPctStr = sumPartPctVis.toFixed(2); // Resultado matemático exacto de la vista
+        const totalRendPctStr = sumRendPctVis.toFixed(2); // Resultado matemático exacto de la vista
         tfootPartes.innerHTML = `
             <tr>
                 <td style="text-align:right; font-weight:bold; color:var(--text-main); font-size:13px;">TOTAL MATERIA ESTRUCTURAL:</td>
