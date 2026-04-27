@@ -345,8 +345,8 @@
           safeSet('lblPesoTrans', formatStrict(pesoRefGlobal, 2));
           safeSet('lblPesoTotalIngresos', formatStrict(pesoRealGlobal, 2));
           safeSet('lblPesoFaltante', formatStrict(mermaFaltante, 2));
-          safeSet('lblEficiencia', formatStrict(eficienciaPct, 2));
-          safeSet('lblMerma', formatStrict(mermaPct, 2));
+          safeSet('lblEficiencia', formatStrict(eficienciaPct, 4));
+          safeSet('lblMerma', formatStrict(mermaPct, 4));
 
           datosGlobales = Array.isArray(res.datos) ? res.datos : [];
           renderizarTablas();
@@ -443,7 +443,7 @@
         datosOrdenados.forEach((item, index) => {
             const pesoItemStr = formatStrict(item.peso, 2);
             const pct = pesoRealGlobal > 0 ? ((item.peso / pesoRealGlobal) * 100) : 0;
-            const pctStrict = formatStrict(pct, 2);
+            const pctStrict = formatStrict(pct, 4);
             
             sumPesoDetalle += item.peso;
             sumPctDetalleVis += parseFloat(pctStrict); // Sumamos exactamente lo que ve el usuario
@@ -463,7 +463,7 @@
             requestAnimationFrame(() => setTimeout(() => { const el = document.getElementById(`bar-${index}`); if(el) el.style.width = `${pctStrict}%`; }, 100 + (index * 20)));
         });
 
-        const totalPctDetalleStr = sumPctDetalleVis.toFixed(2); // Resultado matemático exacto de la vista
+        const totalPctDetalleStr = sumPctDetalleVis.toFixed(4); // Resultado matemático exacto de la vista
         tfootDetalle.innerHTML = `
             <tr>
                 <td colspan="2" style="text-align:right; font-weight:bold; color:var(--text-main); font-size:13px;">TOTAL INSUMOS EXTRAÍDOS:</td>
@@ -489,8 +489,8 @@
             const partPct = pesoRealGlobal > 0 ? (g.peso / pesoRealGlobal) * 100 : 0;
             const rendPct = pesoRefGlobal > 0 ? (g.peso / pesoRefGlobal) * 100 : 0; 
             
-            const partPctStr = formatStrict(partPct, 2);
-            const rendPctStr = formatStrict(rendPct, 2);
+            const partPctStr = formatStrict(partPct, 4);
+            const rendPctStr = formatStrict(rendPct, 4);
 
             sumPartPctVis += parseFloat(partPctStr); // Sumamos exactamente lo que ve el usuario
             sumRendPctVis += parseFloat(rendPctStr); // Sumamos exactamente lo que ve el usuario
@@ -518,7 +518,7 @@
             g.items.forEach(item => {
                 const trSub = document.createElement('tr');
                 trSub.className = `row-sub-item sub-row-grp-${gIndex}`; 
-                const iPartPctStr = formatStrict(pesoRealGlobal > 0 ? (item.peso / pesoRealGlobal) * 100 : 0, 2);
+                const iPartPctStr = formatStrict(pesoRealGlobal > 0 ? (item.peso / pesoRealGlobal) * 100 : 0, 4);
                 trSub.innerHTML = `
                     <td><i class="fas fa-level-up-alt fa-rotate-90" style="margin-right:8px; opacity:0.5;"></i> ${escapeHtml(item.material)}</td>
                     <td>${item.pesoStr}</td>
@@ -529,8 +529,8 @@
             });
         });
 
-        const totalPartPctStr = sumPartPctVis.toFixed(2); // Resultado matemático exacto de la vista
-        const totalRendPctStr = sumRendPctVis.toFixed(2); // Resultado matemático exacto de la vista
+        const totalPartPctStr = sumPartPctVis.toFixed(4); // Resultado matemático exacto de la vista
+        const totalRendPctStr = sumRendPctVis.toFixed(4); // Resultado matemático exacto de la vista
         tfootPartes.innerHTML = `
             <tr>
                 <td style="text-align:right; font-weight:bold; color:var(--text-main); font-size:13px;">TOTAL MATERIA ESTRUCTURAL:</td>
@@ -560,7 +560,7 @@
                 responsive: true, maintainAspectRatio: false, cutout: '65%',
                 plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { 
                     var val = c.raw || 0; var pct = totalPeso > 0 ? ((val / totalPeso) * 100) : 0;
-                    return ` ${formatStrict(val, 2)} Kg | ${formatStrict(pct, 2)}%`;
+                    return ` ${formatStrict(val, 2)} Kg | ${formatStrict(pct, 4)}%`;
                 }}}}, animation: { animateScale: true }
             }
         });
@@ -575,7 +575,7 @@
                     <span style="flex-grow:1; line-height:1.2; font-size:13px; color:var(--secondary);">
                         <strong style="color:#202124;">${escapeHtml(labels[i])}</strong><br>${formatStrict(data[i], 2)} Kg
                     </span>
-                    <span style="font-weight:700; color:var(--primary); font-size:14px;">${formatStrict(pct, 2)}%</span>
+                    <span style="font-weight:700; color:var(--primary); font-size:14px;">${formatStrict(pct, 4)}%</span>
                 </div>`;
         }
         document.getElementById(legendId).innerHTML = legendHTML + '</div>';
@@ -662,7 +662,12 @@
 
             ws.columns.forEach((column, index) => {
                 column.width = index === 0 ? 45 : 22; 
-                column.eachCell({ includeEmpty: false }, (cell, rowNumber) => { if (typeof cell.value === 'number' && rowNumber > 1) cell.numFmt = '#,##0.00'; });
+                column.eachCell({ includeEmpty: false }, (cell, rowNumber) => { 
+  if (typeof cell.value === 'number' && rowNumber > 1) {
+    // Si la columna es 3 o 4 (Porcentajes), dale 4 decimales. Si es peso (col 2), 2 decimales.
+    cell.numFmt = (column.number >= 3) ? '#,##0.0000' : '#,##0.00'; 
+  }
+});
             });
 
             const buffer = await wb.xlsx.writeBuffer();
