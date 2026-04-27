@@ -85,6 +85,8 @@
         .view-controls-title { display: none; }
         .summary-matrix { grid-template-columns: 1fr; gap: 15px; padding: 15px; }
         .card { border-radius: 0; border-left: none; box-shadow: none; padding: 20px 15px; margin-bottom: 0; border-bottom: 8px solid var(--background);}
+        .chart-layout { flex-direction: column; }
+        .chart-canvas-wrapper { height: 250px; width: 100%; }
       }
 
       /* ==========================================
@@ -100,7 +102,9 @@
         
         /* Forzar visibilidad de vistas */
         #vista-tabla, #vista-partes, #vista-grafico { display: block !important; page-break-inside: auto; }
-        #vista-grafico { display: flex !important; page-break-inside: avoid; margin-top: 30px; }
+        #vista-grafico { margin-top: 30px; }
+        .chart-layout { display: flex !important; page-break-inside: avoid; margin-bottom: 40px !important; }
+        .grafico-titulo { page-break-after: avoid; }
         
         /* Forzar Acordeón abierto */
         .row-sub-item { display: table-row !important; }
@@ -192,9 +196,24 @@
             </table>
           </div>
 
-          <div id="vista-grafico" class="chart-layout fade-in" style="display: none;">
-            <div class="chart-canvas-wrapper"><canvas id="donaChart"></canvas></div>
-            <div class="chart-legend-wrapper" id="custom-legend"></div>
+          <div id="vista-grafico" class="fade-in" style="display: none;">
+            
+            <h3 class="grafico-titulo" style="color: var(--secondary); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+              <i class="fas fa-sitemap"></i> Participación por Partes Estructurales
+            </h3>
+            <div class="chart-layout" style="margin-bottom: 50px;">
+              <div class="chart-canvas-wrapper"><canvas id="donaChartPartes"></canvas></div>
+              <div class="chart-legend-wrapper" id="legend-partes"></div>
+            </div>
+
+            <h3 class="grafico-titulo" style="color: var(--secondary); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+              <i class="fas fa-list"></i> Participación por Insumos (Materiales)
+            </h3>
+            <div class="chart-layout">
+              <div class="chart-canvas-wrapper"><canvas id="donaChartInsumos"></canvas></div>
+              <div class="chart-legend-wrapper" id="legend-insumos"></div>
+            </div>
+
           </div>
 
         </div>
@@ -208,7 +227,9 @@
       // ==========================================
       const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx1yz9OGqtgWmXYEbiw6rFTfuyx-WM6r2WnW04-szj1EItjsJCRf2CYJelrilklqrfX/exec"; 
 
-      var datosChartObj = null; 
+      // OBJETOS DE GRÁFICO (AHORA SON DOS)
+      var chartPartesObj = null; 
+      var chartInsumosObj = null;
       
       // VARIABLES GLOBALES
       var datosGlobales = [];
@@ -237,7 +258,6 @@
       // INICIO Y CARGA DE DATOS (MIGRADO A GITHUB / FETCH)
       // ==========================================
       window.onload = function() {
-        // Obtenemos el id_trans directamente de la URL (ej. ?id_trans=123)
         const urlParams = new URLSearchParams(window.location.search);
         const idTrans = urlParams.get('id_trans');
 
@@ -246,7 +266,6 @@
           return;
         }
 
-        // Llamada fetch a Google Apps Script
         fetch(`${WEB_APP_URL}?id_trans=${idTrans}`)
           .then(response => response.json())
           .then(data => procesarRespuesta(data))
@@ -263,8 +282,9 @@
           document.getElementById('vista-' + v).style.display = 'none';
           document.getElementById('btnTab' + v.charAt(0).toUpperCase() + v.slice(1)).className = 'btn btn-outline';
         });
-        const activeDisplay = vista === 'grafico' ? 'flex' : 'block';
-        document.getElementById('vista-' + vista).style.display = activeDisplay;
+        
+        // vista-grafico ahora es un div contenedor "block" en lugar de "flex"
+        document.getElementById('vista-' + vista).style.display = 'block';
         document.getElementById('btnTab' + vista.charAt(0).toUpperCase() + vista.slice(1)).className = 'btn btn-primary';
       }
 
@@ -304,7 +324,6 @@
           const cabecera = res.cabecera || {};
           const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
           
-          // 1. Extraemos los valores para usarlos en el DOM y en el Título
           const producto = cabecera.productoDestino || '-';
           const proveedor = cabecera.proveedor || '-';
           const lote = cabecera.lote || '-';
@@ -347,9 +366,10 @@
         const tbodyPartes = document.getElementById('tablaPartesBody');
         const tfootPartes = document.getElementById('tablaPartesFoot');
         
-        const chartLabels = []; const chartData = [];
+        // Arreglos de datos para gráficos
+        const partesLabels = []; const partesData = [];
+        const insumosLabels = []; const insumosData = [];
         
-        // Estructuras de agrupación
         const gruposMateriales = {}; 
         const gruposPartes = {};
 
@@ -388,7 +408,14 @@
             peso: g.peso
         }));
 
-        // Aplicar Sort Interactivo
+        // Preparar la data para el Gráfico de Insumos (ordenada por peso mayor a menor)
+        let datosInsumosChart = [...datosOrdenados].sort((a,b) => b.peso - a.peso);
+        datosInsumosChart.forEach(item => {
+            insumosLabels.push(item.material);
+            insumosData.push(item.peso);
+        });
+
+        // Aplicar Sort Interactivo para la tabla
         datosOrdenados.sort((a, b) => {
             let valA, valB;
             if (sortConfig.col === 'material') { valA = (a.material||'').toUpperCase(); valB = (b.material||'').toUpperCase(); }
@@ -433,7 +460,6 @@
             requestAnimationFrame(() => setTimeout(() => { const el = document.getElementById(`bar-${index}`); if(el) el.style.width = `${pctStrict}%`; }, 100 + (index * 20)));
         });
 
-        // Inyección de TFOOT Detalle Insumos
         const totalPctDetalleStr = pesoRealGlobal > 0 ? formatStrict((sumPesoDetalle / pesoRealGlobal) * 100, 2) : "0.00";
         tfootDetalle.innerHTML = `
             <tr>
@@ -451,7 +477,7 @@
 
         let sumPesoPartes = 0;
         arrayGrupos.forEach((g, gIndex) => {
-            chartLabels.push(g.parte); chartData.push(g.peso);
+            partesLabels.push(g.parte); partesData.push(g.peso);
             sumPesoPartes += g.peso;
 
             const partPct = pesoRealGlobal > 0 ? (g.peso / pesoRealGlobal) * 100 : 0;
@@ -494,7 +520,6 @@
             });
         });
 
-        // Inyección de TFOOT Partes
         const totalPartPctStr = pesoRealGlobal > 0 ? formatStrict((sumPesoPartes / pesoRealGlobal) * 100, 2) : "0.00";
         const totalRendPctStr = pesoRefGlobal > 0 ? formatStrict((sumPesoPartes / pesoRefGlobal) * 100, 2) : "0.00";
         tfootPartes.innerHTML = `
@@ -506,17 +531,20 @@
             </tr>`;
 
         // ===============================================
-        // CONSTRUCCIÓN VISTA 3: GRÁFICO (Chart.js)
+        // CONSTRUCCIÓN VISTA 3: DUAL GRÁFICOS (Chart.js)
         // ===============================================
-        generarGrafico(chartLabels, chartData, pesoRealGlobal);
+        chartPartesObj = generarGrafico('donaChartPartes', 'legend-partes', chartPartesObj, partesLabels, partesData, pesoRealGlobal);
+        chartInsumosObj = generarGrafico('donaChartInsumos', 'legend-insumos', chartInsumosObj, insumosLabels, insumosData, pesoRealGlobal);
       }
 
-      function generarGrafico(labels, data, totalPeso) {
-        var ctx = document.getElementById('donaChart').getContext('2d');
-        var bgColors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00bcd4', '#ff9800', '#9e9e9e', '#3f51b5', '#e91e63'];
-        if (datosChartObj) datosChartObj.destroy();
+      function generarGrafico(canvasId, legendId, chartInstance, labels, data, totalPeso) {
+        var ctx = document.getElementById(canvasId).getContext('2d');
+        // Paleta extendida para soportar gran cantidad de insumos
+        var bgColors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00bcd4', '#ff9800', '#9e9e9e', '#3f51b5', '#e91e63', '#26a69a', '#ec407a', '#ab47bc', '#5c6bc0', '#29b6f6', '#26c6da', '#9ccc65', '#d4e157', '#ffee58', '#ffa726'];
+        
+        if (chartInstance) chartInstance.destroy();
 
-        datosChartObj = new Chart(ctx, {
+        var newChart = new Chart(ctx, {
             type: 'doughnut',
             data: { labels: labels, datasets: [{ data: data, backgroundColor: bgColors, borderWidth: 2, borderColor: '#ffffff'}] },
             options: {
@@ -541,7 +569,9 @@
                     <span style="font-weight:700; color:var(--primary); font-size:14px;">${formatStrict(pct, 2)}%</span>
                 </div>`;
         }
-        document.getElementById('custom-legend').innerHTML = legendHTML + '</div>';
+        document.getElementById(legendId).innerHTML = legendHTML + '</div>';
+        
+        return newChart;
       }
 
       // ==========================================
@@ -556,7 +586,6 @@
         try {
             const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
             
-            // 1. CONSTRUCCIÓN DE LA NOMENCLATURA ESTRICTA
             const producto = safeGet('lblProductoDestino').toUpperCase(); 
             const lote = safeGet('lblLote').toUpperCase();
             const proveedor = safeGet('lblProveedor').toUpperCase();
@@ -591,7 +620,6 @@
               }
             });
             
-            // Inyectar FOOTER de Partes
             document.querySelectorAll('#tablaPartesFoot tr').forEach(fila => {
               const cols = fila.querySelectorAll('td');
               if(cols.length >= 4) {
@@ -601,7 +629,7 @@
             });
             ws.addRow([]); 
 
-            // 2. Exportar Tabla de Detalle Insumos (Por Tipo de Item)
+            // 2. Exportar Tabla de Detalle Insumos
             ws.addRow(['RESUMEN POR TIPO DE ITEM (MATERIAL)']).font = { bold: true, size: 12 };
             ws.mergeCells(`A${ws.lastRow.number}:D${ws.lastRow.number}`);
             const headerDetalle = ws.addRow(['DESCRIPCIÓN DEL MATERIAL', 'PARTES INVOLUCRADAS', 'PESO TOTAL (Kg)', '% DE PARTICIPACIÓN']);
@@ -614,7 +642,6 @@
               }
             });
 
-            // Inyectar FOOTER de Detalle
             document.querySelectorAll('#tablaFoot tr').forEach(fila => {
               const cols = fila.querySelectorAll('td');
               if(cols.length >= 3) {
@@ -632,7 +659,6 @@
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             
-            // 2. GUARDAR EXCEL CON LA NOMENCLATURA
             saveAs(blob, `${nombreArchivo}.xlsx`);
 
         } catch (error) {
@@ -654,19 +680,17 @@
 
         const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
         
-        // 1. CONSTRUCCIÓN DE LA NOMENCLATURA ESTRICTA
         const producto = safeGet('lblProductoDestino').toUpperCase(); 
         const lote = safeGet('lblLote').toUpperCase();
         const proveedor = safeGet('lblProveedor').toUpperCase();
         const nombreArchivo = `TRANSFORMACION_${producto}_${lote}_${proveedor}`;
 
         const tituloOriginal = document.title;
-        // Inyectamos el nombre forzado para el diálogo de impresión
         document.title = nombreArchivo;
 
         let vistaActiva = 'tabla';
         if (document.getElementById('vista-partes').style.display === 'block') vistaActiva = 'partes';
-        if (document.getElementById('vista-grafico').style.display === 'flex') vistaActiva = 'grafico';
+        if (document.getElementById('vista-grafico').style.display === 'block') vistaActiva = 'grafico';
 
         const filasHijas = document.querySelectorAll('.row-sub-item');
         const displayAcordeones = [];
@@ -674,16 +698,17 @@
 
         document.getElementById('vista-tabla').style.display = 'block';
         document.getElementById('vista-partes').style.display = 'block';
-        document.getElementById('vista-grafico').style.display = 'flex';
+        document.getElementById('vista-grafico').style.display = 'block';
         
-        if (datosChartObj) datosChartObj.resize();
+        if (chartPartesObj) chartPartesObj.resize();
+        if (chartInsumosObj) chartInsumosObj.resize();
 
         setTimeout(() => {
             window.print(); 
             
             document.title = tituloOriginal; 
             ['tabla', 'partes', 'grafico'].forEach(v => { document.getElementById('vista-' + v).style.display = 'none'; });
-            document.getElementById('vista-' + vistaActiva).style.display = vistaActiva === 'grafico' ? 'flex' : 'block';
+            document.getElementById('vista-' + vistaActiva).style.display = 'block';
             filasHijas.forEach((fila, i) => { fila.style.display = displayAcordeones[i]; });
 
             btnExportar.innerHTML = originalText; btnExportar.disabled = false;
