@@ -430,21 +430,53 @@
           
           document.title = `${producto}_${lote}_${proveedor}`;
 
+      // 1. Cargamos el array de datos primero para poder analizarlo
+          datosGlobales = Array.isArray(res.datos) ? res.datos : [];
+
           pesoRefGlobal = parseFloat(formatStrict(parseFloat(cabecera.pesoTotalCarga) || 0, 2));
           pesoRealGlobal = parseFloat(formatStrict(parseFloat(res.pesoTotal) || 0, 2));
 
-          let mermaFaltante = pesoRefGlobal - pesoRealGlobal;
-          if (mermaFaltante < 0) mermaFaltante = 0; 
-          const eficienciaPct = pesoRefGlobal > 0 ? (pesoRealGlobal / pesoRefGlobal) * 100 : 0;
-          const mermaPct = pesoRefGlobal > 0 ? (mermaFaltante / pesoRefGlobal) * 100 : 0;
+          // ==============================================================
+          // O(n) BYPASS: FILTRADO DE MERMA EXPLÍCITA EN MEMORIA
+          // Escaneamos los items para descontar mermas del peso útil
+          // ==============================================================
+          let pesoMermaDeclarada = 0;
+          datosGlobales.forEach(item => {
+              const nombreItem = (item.material || '').toUpperCase();
+              // Si el nombre contiene "MERMA", lo sumamos al acumulador
+              if (nombreItem.includes('MERMA')) {
+                  pesoMermaDeclarada += (parseFloat(item.peso) || 0);
+              }
+          });
 
+          // 2. Cálculos de Balance de Masa (HACCP Compliant)
+          let pesoFaltanteNoReportado = pesoRefGlobal - pesoRealGlobal;
+          if (pesoFaltanteNoReportado < 0) pesoFaltanteNoReportado = 0; 
+
+          // La merma real es lo que se evaporó/perdió MÁS lo que se extrajo como merma
+          const mermaTotalReal = pesoFaltanteNoReportado + pesoMermaDeclarada;
+          
+          // El peso verdaderamente útil que genera valor a la empresa
+          const pesoResultadoUtil = pesoRealGlobal - pesoMermaDeclarada;
+
+          const eficienciaPct = pesoRefGlobal > 0 ? (pesoResultadoUtil / pesoRefGlobal) * 100 : 0;
+          const mermaPct = pesoRefGlobal > 0 ? (mermaTotalReal / pesoRefGlobal) * 100 : 0;
+
+          // 3. Inyección en el DOM
           safeSet('lblPesoTrans', formatStrict(pesoRefGlobal, 2));
-          safeSet('lblPesoTotalIngresos', formatStrict(pesoRealGlobal, 2));
-          safeSet('lblPesoFaltante', formatStrict(mermaFaltante, 2));
+          safeSet('lblPesoTotalIngresos', formatStrict(pesoResultadoUtil, 2)); 
+          
+          // Opcional: Actualizamos sutilmente la etiqueta visual para mayor claridad del operario
+          const elLabelFaltante = document.querySelector('#matriz-resultados > div:nth-child(1) > div:nth-child(3) > span.summary-label');
+          if (elLabelFaltante) elLabelFaltante.innerText = 'MERMA TOTAL (KG):';
+          
+          safeSet('lblPesoFaltante', formatStrict(mermaTotalReal, 2)); 
           safeSet('lblEficiencia', formatStrict(eficienciaPct, 4));
           safeSet('lblMerma', formatStrict(mermaPct, 4));
 
-          datosGlobales = Array.isArray(res.datos) ? res.datos : [];
+          // 4. Renderizamos tablas y gráficos
+          // Nota Arquitectónica: Las tablas inferiores seguirán usando 'pesoRealGlobal' 
+          // como denominador (568.83 Kg) para que el balance de masa físico cuadre al 100%.
           renderizarTablas();
 
         } catch(e) {
