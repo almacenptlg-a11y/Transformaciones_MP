@@ -413,8 +413,15 @@
           const cabecera = res.cabecera || {};
           const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
           
-          const producto = cabecera.productoDestino || '-';
-          const proveedor = cabecera.proveedor || '-';
+          // ==============================================================
+          // O(1) BYPASS: Captura de Parámetros URL (Desreferenciación en Cliente)
+          // ==============================================================
+          const urlParams = new URLSearchParams(window.location.search);
+          
+          // urlParams.get() decodifica automáticamente los caracteres especiales (%20, acentos)
+          // Fallback seguro: URL > Backend > Valor por defecto
+          const producto = urlParams.get('sku') || cabecera.productoDestino || '-';
+          const proveedor = urlParams.get('prov') || cabecera.proveedor || '-';
           const lote = cabecera.lote || '-';
           
           safeSet('lblProductoDestino', escapeHtml(producto));
