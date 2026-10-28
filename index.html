@@ -646,11 +646,14 @@
             g.items.forEach(item => {
                 const trSub = document.createElement('tr');
                 trSub.className = `row-sub-item sub-row-grp-${gIndex}`; 
-                const iPartPctStr = formatStrict(pesoRealGlobal > 0 ? (item.peso / pesoRealGlobal) * 100 : 0, 4);
+                
+                // Bypass Matemático: Calculamos el % en función de la masa del grupo padre (g.peso)
+                const iPartPctStr = formatStrict(g.peso > 0 ? (item.peso / g.peso) * 100 : 0, 4);
+                
                 trSub.innerHTML = `
                     <td><i class="fas fa-level-up-alt fa-rotate-90" style="margin-right:8px; opacity:0.5;"></i> ${escapeHtml(item.material)}</td>
                     <td>${item.pesoStr}</td>
-                    <td><span style="opacity:0.7;">${iPartPctStr}%</span></td>
+                    <td><span style="opacity:0.7; color: var(--primary); font-weight: 500;">${iPartPctStr}%</span></td>
                     <td></td>
                 `;
                 tbodyPartes.appendChild(trSub);
