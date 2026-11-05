@@ -423,12 +423,12 @@
           const producto = urlParams.get('sku') || cabecera.productoDestino || '-';
           const proveedor = urlParams.get('prov') || cabecera.proveedor || '-';
           const lote = cabecera.lote || '-';
-          const producto = urlParams.get('id_trans') || cabecera.idOd || '-';
+          const otmp = urlParams.get('id_trans') || cabecera.Otmp || '-';
           
           safeSet('lblProductoDestino', escapeHtml(producto));
           safeSet('lblProveedor', escapeHtml(proveedor));
           safeSet('lblLote', escapeHtml(lote));
-          safeSet('lblOtmp', escapeHtml(idOd));
+          safeSet('lblOtmp', escapeHtml(otmp));
           
           document.title = `${producto}_${lote}_${proveedor}`;
 
