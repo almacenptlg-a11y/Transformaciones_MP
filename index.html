@@ -228,9 +228,18 @@
         </div>
 
         <div class="card header-card">          
-          <h2>
-            <span id="lblOtmp"></span> - <span id="lblProductoDestino"></span>
-            <span style="font-size: 14px; color: var(--secondary); font-weight: normal;"> Prov: <span id="lblProveedor">-</span></span>
+         <h2>
+            <!-- Bloque izquierdo agrupado -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="lblOtmp"></span>
+              <span style="color: var(--secondary);">_</span>
+              <span id="lblProductoDestino"></span>
+            </div>
+  
+            <!-- Bloque derecho -->
+              <span style="font-size: 14px; color: var(--secondary); font-weight: normal;"> 
+              Prov: <span id="lblProveedor">-</span>
+              </span>
           </h2>
           
           <div class="summary-matrix" id="matriz-resultados">
@@ -423,7 +432,7 @@
           const producto = urlParams.get('sku') || cabecera.productoDestino || '-';
           const proveedor = urlParams.get('prov') || cabecera.proveedor || '-';
           const lote = cabecera.lote || '-';
-          const otmp = urlParams.get('id_trans') || cabecera.Otmp || '-';
+          const otmp = urlParams.get('id_trans') || cabecera.otmp || '-';
           
           safeSet('lblProductoDestino', escapeHtml(producto));
           safeSet('lblProveedor', escapeHtml(proveedor));
