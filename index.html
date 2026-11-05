@@ -229,8 +229,8 @@
 
         <div class="card header-card">          
           <h2>
-            <span><i class="fas fa-cube" aria-hidden="true"></i> Producto: <span id="lblProductoDestino">-</span></span>
-            <span style="font-size: 14px; color: var(--secondary); font-weight: normal;"><i class="fas fa-truck"></i> Prov: <span id="lblProveedor">-</span></span>
+            <span id="lblOtmp">-<span id="lblProductoDestino">-</span></span>
+            <span style="font-size: 14px; color: var(--secondary); font-weight: normal;"> Prov: <span id="lblProveedor">-</span></span>
           </h2>
           
           <div class="summary-matrix" id="matriz-resultados">
@@ -423,10 +423,12 @@
           const producto = urlParams.get('sku') || cabecera.productoDestino || '-';
           const proveedor = urlParams.get('prov') || cabecera.proveedor || '-';
           const lote = cabecera.lote || '-';
+          const producto = urlParams.get('id_trans') || cabecera.idOd || '-';
           
           safeSet('lblProductoDestino', escapeHtml(producto));
           safeSet('lblProveedor', escapeHtml(proveedor));
           safeSet('lblLote', escapeHtml(lote));
+          safeSet('lblOtmp', escapeHtml(idOd));
           
           document.title = `${producto}_${lote}_${proveedor}`;
 
