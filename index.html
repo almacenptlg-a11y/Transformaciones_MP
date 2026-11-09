@@ -724,6 +724,7 @@
         return newChart;
       }
 
+
       // ==========================================
       // MOTOR DE EXPORTACIÓN NATIVO A .XLSX (ExcelJS)
       // ==========================================
@@ -736,10 +737,11 @@
         try {
             const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
             
+            // Trazabilidad HACCP Estricta
+            const otmp = safeGet('lblOtmp').toUpperCase();
             const producto = safeGet('lblProductoDestino').toUpperCase(); 
             const lote = safeGet('lblLote').toUpperCase();
-            const proveedor = safeGet('lblProveedor').toUpperCase();
-            const nombreArchivo = `TRANSFORMACION_${producto}_${lote}_${proveedor}`;
+            const nombreArchivo = `${otmp ? otmp + '_' : ''}TRANSFORMACION_${producto}_LOTE-${lote}`;
             
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet('Reporte de Desglose');
@@ -748,25 +750,43 @@
             const subHeaderStyle = { font: { bold: true, color: { argb: 'FFFFFFFF' } }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5F6368' } }, alignment: { vertical: 'middle', horizontal: 'center' } };
             const footerStyle = { font: { bold: true }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F6F9' } } };
 
-            ws.mergeCells('A1:D1'); ws.getCell('A1').value = `REPORTE DE TRANSFORMACIÓN: ${producto}`; ws.getCell('A1').style = headerStyle; ws.getRow(1).height = 30;
+            ws.mergeCells('A1:D1'); ws.getCell('A1').value = `REPORTE DE TRANSFORMACIÓN: ${producto} ${otmp ? '('+otmp+')' : ''}`; ws.getCell('A1').style = headerStyle; ws.getRow(1).height = 30;
 
             ws.addRow(['Peso de Ingreso:', parseFloat(safeGet('lblPesoTrans')), 'Lote:', lote]);
-            ws.addRow(['Peso Resultado:', parseFloat(safeGet('lblPesoTotalIngresos')), '% Eficiencia (Rendimiento):', parseFloat(safeGet('lblEficiencia'))]);
-            ws.addRow(['Peso Faltante:', parseFloat(safeGet('lblPesoFaltante')), '% Merma:', parseFloat(safeGet('lblMerma'))]);
+            ws.addRow(['Peso Resultado:', parseFloat(safeGet('lblPesoTotalIngresos')), '% Rendimiento:', parseFloat(safeGet('lblEficiencia'))]);
+            ws.addRow(['Merma Total (Kg):', parseFloat(safeGet('lblPesoFaltante')), '% Merma:', parseFloat(safeGet('lblMerma'))]);
             ws.addRow([]); 
 
             ['A2','C2','A3','C3','A4','C4'].forEach(celda => { ws.getCell(celda).font = { bold: true }; ws.getCell(celda).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFD' } }; });
 
-            // 1. Exportar Tabla de Partes Estructurales
+            // 1. Exportar Tabla de Partes Estructurales (PADRES E HIJOS)
             ws.addRow(['RESUMEN DE RENDIMIENTO POR PARTE ESTRUCTURAL']).font = { bold: true, size: 12 };
             ws.mergeCells(`A${ws.lastRow.number}:D${ws.lastRow.number}`);
-            const headerPartes = ws.addRow(['PARTE PRIMARIA', 'PESO (Kg)', '% PARTICIPACIÓN', '% RENDIMIENTO']);
+            const headerPartes = ws.addRow(['PARTE PRIMARIA E INSUMOS', 'PESO (Kg)', '% PARTICIPACIÓN', '% RENDIMIENTO']);
             headerPartes.eachCell(c => c.style = subHeaderStyle);
 
-            document.querySelectorAll('#tablaPartesBody tr.row-group-header').forEach(fila => {
+            // O(n) Bypass: Capturamos tanto .row-group-header como .row-sub-item
+            document.querySelectorAll('#tablaPartesBody tr').forEach(fila => {
+              const isGroup = fila.classList.contains('row-group-header');
               const cols = fila.querySelectorAll('td');
+              
               if(cols.length >= 4) {
-                ws.addRow([ cols[0].innerText.trim(), parseFloat(cols[1].innerText.trim()) || 0, parseFloat(cols[2].innerText.replace('%','').trim()) || 0, parseFloat(cols[3].innerText.replace('%','').trim()) || 0 ]);
+                // Tabulación visual para insumos en Excel
+                const nombreItem = isGroup ? cols[0].innerText.trim() : `      ↳ ${cols[0].innerText.trim()}`;
+                const peso = parseFloat(cols[1].innerText.trim()) || 0;
+                const partPct = parseFloat(cols[2].innerText.replace('%','').trim()) || 0;
+                
+                // Los hijos no tienen rendimiento, evitamos imprimir un 0 falso
+                const rendPct = isGroup ? (parseFloat(cols[3].innerText.replace('%','').trim()) || 0) : '';
+
+                const r = ws.addRow([nombreItem, peso, partPct, rendPct]);
+                
+                // Aplicamos jerarquía visual (Negrita para padres, gris itálico para hijos)
+                if (isGroup) {
+                    r.font = { bold: true };
+                } else {
+                    r.font = { color: { argb: 'FF5F6368' }, italic: true };
+                }
               }
             });
             
@@ -779,7 +799,7 @@
             });
             ws.addRow([]); 
 
-            // 2. Exportar Tabla de Detalle Insumos
+            // 2. Exportar Tabla de Detalle Insumos (Mantiene su estructura plana)
             ws.addRow(['RESUMEN POR TIPO DE ITEM (MATERIAL)']).font = { bold: true, size: 12 };
             ws.mergeCells(`A${ws.lastRow.number}:D${ws.lastRow.number}`);
             const headerDetalle = ws.addRow(['DESCRIPCIÓN DEL MATERIAL', 'PARTES INVOLUCRADAS', 'PESO TOTAL (Kg)', '% DE PARTICIPACIÓN']);
@@ -802,13 +822,12 @@
             });
 
             ws.columns.forEach((column, index) => {
-                column.width = index === 0 ? 45 : 22; 
+                column.width = index === 0 ? 55 : 22; // Ancho extra para la col 1 por la indentación
                 column.eachCell({ includeEmpty: false }, (cell, rowNumber) => { 
-  if (typeof cell.value === 'number' && rowNumber > 1) {
-    // Si la columna es 3 o 4 (Porcentajes), dale 4 decimales. Si es peso (col 2), 2 decimales.
-    cell.numFmt = (column.number >= 3) ? '#,##0.0000' : '#,##0.00'; 
-  }
-});
+                  if (typeof cell.value === 'number' && rowNumber > 1) {
+                    cell.numFmt = (column.number >= 3) ? '#,##0.0000' : '#,##0.00'; 
+                  }
+                });
             });
 
             const buffer = await wb.xlsx.writeBuffer();
@@ -835,10 +854,12 @@
 
         const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
         
+        const otmp = safeGet('lblOtmp').toUpperCase();
         const producto = safeGet('lblProductoDestino').toUpperCase(); 
         const lote = safeGet('lblLote').toUpperCase();
-        const proveedor = safeGet('lblProveedor').toUpperCase();
-        const nombreArchivo = `TRANSFORMACION_${producto}_${lote}_${proveedor}`;
+        
+        // El motor PDF usará esta etiqueta rigurosa para guardar el archivo en el OS del usuario
+        const nombreArchivo = `${otmp ? otmp + '_' : ''}TRANSFORMACION_${producto}_LOTE-${lote}`;
 
         const tituloOriginal = document.title;
         document.title = nombreArchivo;
@@ -869,6 +890,7 @@
             btnExportar.innerHTML = originalText; btnExportar.disabled = false;
         }, 500); 
       }
+      
     </script>
   </body>
 </html>
