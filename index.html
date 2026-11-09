@@ -181,6 +181,16 @@
         tr { page-break-inside: avoid; page-break-after: auto; }
         thead { display: table-header-group; } 
         tfoot { display: table-footer-group; }
+
+        /* ======== BLINDAJE DE FANTASMAS VISUALES (Scrollbars) ======== */
+        .table-responsive { 
+            overflow: visible !important; 
+            overflow-x: visible !important; 
+            border: none !important; 
+        }
+        /* Apagar motores de scroll nativos en impresión */
+        ::-webkit-scrollbar { display: none !important; }
+        * { scrollbar-width: none !important; }
       }
       
     </style>
@@ -758,7 +768,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
       // ==========================================
-      // MOTOR DE EXPORTACIÓN NATIVO A .XLSX (ExcelJS)
+      // MOTOR DE EXPORTACIÓN NATIVO A .XLSX (ExcelJS + HACCP)
       // ==========================================
       async function exportarExcel() {
         const btnExcel = document.getElementById('btnExcel');
@@ -778,18 +788,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet('Reporte de Desglose');
 
+            // Paleta de Estilos Genovesa
+            const corporateRed = { argb: 'FFC51D23' };
+            const corporateBlue = { argb: 'FF00457C' };
+            const metaStyle = { font: { italic: true, size: 9, color: { argb: 'FF4A5568' } }, alignment: { vertical: 'middle', horizontal: 'center' }, border: { top: { style: 'thin', color: { argb: 'FFE2E8F0' } } } };
             const headerStyle = { font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A73E8' } }, alignment: { vertical: 'middle', horizontal: 'center' } };
             const subHeaderStyle = { font: { bold: true, color: { argb: 'FFFFFFFF' } }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5F6368' } }, alignment: { vertical: 'middle', horizontal: 'center' } };
             const footerStyle = { font: { bold: true }, fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F6F9' } } };
 
-            ws.mergeCells('A1:D1'); ws.getCell('A1').value = `REPORTE DE TRANSFORMACIÓN: ${producto} ${otmp ? '('+otmp+')' : ''}`; ws.getCell('A1').style = headerStyle; ws.getRow(1).height = 30;
+            // ==============================================================
+            // 1. INYECCIÓN DE CABECERA INSTITUCIONAL HACCP
+            // ==============================================================
+            ws.addRow(['LA GENOVESA - DESDE 1977']);
+            ws.mergeCells('A1:D1');
+            ws.getCell('A1').style = { font: { bold: true, color: corporateRed, size: 16 }, alignment: { horizontal: 'center', vertical: 'middle' }};
+            
+            ws.addRow(['MANUAL DE BUENAS PRACTICAS DE MANUFACTURA']);
+            ws.mergeCells('A2:D2');
+            ws.getCell('A2').style = { font: { bold: true, color: corporateBlue, size: 12 }, alignment: { horizontal: 'center' }};
+
+            ws.addRow(['ORDEN DE TRANSFORMACION DE MATERIA PRIMA']);
+            ws.mergeCells('A3:D3');
+            ws.getCell('A3').style = { font: { bold: true, color: corporateBlue, size: 12 }, alignment: { horizontal: 'center' }};
+
+            const rowMeta1 = ws.addRow(['Código: LGA-OTMP-SAF1', 'Fecha: 08-2025', 'Versión: 14', '']);
+            ws.mergeCells('C4:D4'); rowMeta1.eachCell(c => c.style = metaStyle);
+
+            const rowMeta2 = ws.addRow(['Elaborado por: Aseguramiento de Calidad', 'Revisado por: Sub Gerente', 'Aprobado por: Gerente General', '']);
+            ws.mergeCells('C5:D5'); rowMeta2.eachCell(c => { c.style = metaStyle; c.border = {}; }); // Quitamos borde superior a la 2da fila meta
+
+            ws.addRow([]); // Espaciador visual
+            // ==============================================================
+
+            // Título de la data
+            ws.addRow([`REPORTE DE TRANSFORMACIÓN: ${producto} ${otmp ? '('+otmp+')' : ''}`]);
+            ws.mergeCells('A7:D7'); ws.getCell('A7').style = headerStyle; ws.getRow(7).height = 30;
 
             ws.addRow(['Peso de Ingreso:', parseFloat(safeGet('lblPesoTrans')), 'Lote:', lote]);
             ws.addRow(['Peso Resultado:', parseFloat(safeGet('lblPesoTotalIngresos')), '% Rendimiento:', parseFloat(safeGet('lblEficiencia'))]);
             ws.addRow(['Merma Total (Kg):', parseFloat(safeGet('lblPesoFaltante')), '% Merma:', parseFloat(safeGet('lblMerma'))]);
             ws.addRow([]); 
 
-            ['A2','C2','A3','C3','A4','C4'].forEach(celda => { ws.getCell(celda).font = { bold: true }; ws.getCell(celda).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFD' } }; });
+            ['A8','C8','A9','C9','A10','C10'].forEach(celda => { ws.getCell(celda).font = { bold: true }; ws.getCell(celda).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFD' } }; });
 
             // 1. Exportar Tabla de Partes Estructurales (PADRES E HIJOS)
             ws.addRow(['RESUMEN DE RENDIMIENTO POR PARTE ESTRUCTURAL']).font = { bold: true, size: 12 };
@@ -803,17 +843,15 @@ document.addEventListener('DOMContentLoaded', async () => {
               const cols = fila.querySelectorAll('td');
               
               if(cols.length >= 4) {
-                // Tabulación visual para insumos en Excel
                 const nombreItem = isGroup ? cols[0].innerText.trim() : `      ↳ ${cols[0].innerText.trim()}`;
                 const peso = parseFloat(cols[1].innerText.trim()) || 0;
                 const partPct = parseFloat(cols[2].innerText.replace('%','').trim()) || 0;
                 
-                // Los hijos no tienen rendimiento, evitamos imprimir un 0 falso
+                // Los hijos no tienen rendimiento
                 const rendPct = isGroup ? (parseFloat(cols[3].innerText.replace('%','').trim()) || 0) : '';
 
                 const r = ws.addRow([nombreItem, peso, partPct, rendPct]);
                 
-                // Aplicamos jerarquía visual (Negrita para padres, gris itálico para hijos)
                 if (isGroup) {
                     r.font = { bold: true };
                 } else {
@@ -831,7 +869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             ws.addRow([]); 
 
-            // 2. Exportar Tabla de Detalle Insumos (Mantiene su estructura plana)
+            // 2. Exportar Tabla de Detalle Insumos
             ws.addRow(['RESUMEN POR TIPO DE ITEM (MATERIAL)']).font = { bold: true, size: 12 };
             ws.mergeCells(`A${ws.lastRow.number}:D${ws.lastRow.number}`);
             const headerDetalle = ws.addRow(['DESCRIPCIÓN DEL MATERIAL', 'PARTES INVOLUCRADAS', 'PESO TOTAL (Kg)', '% DE PARTICIPACIÓN']);
@@ -853,10 +891,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               }
             });
 
+            // Ajuste automático de anchos de columna para acomodar el Header
             ws.columns.forEach((column, index) => {
-                column.width = index === 0 ? 55 : 22; // Ancho extra para la col 1 por la indentación
+                column.width = index === 0 ? 55 : 22; 
                 column.eachCell({ includeEmpty: false }, (cell, rowNumber) => { 
-                  if (typeof cell.value === 'number' && rowNumber > 1) {
+                  if (typeof cell.value === 'number' && rowNumber > 7) { // A partir de los datos, aplicar numFmt
                     cell.numFmt = (column.number >= 3) ? '#,##0.0000' : '#,##0.00'; 
                   }
                 });
