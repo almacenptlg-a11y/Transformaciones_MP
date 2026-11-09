@@ -90,21 +90,27 @@
       }
 
       /* ==========================================
-         CABECERA INSTITUCIONAL HACCP
+         CABECERA INSTITUCIONAL HACCP (UI/UX PREMIUM)
          ========================================== */
-      .header-haccp-card { background: var(--surface); border: 1px solid #c5ccd6; border-radius: 8px; padding: 12px 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+      .header-haccp-card { 
+          background: var(--surface); 
+          border-top: 4px solid #C51D23; /* Acento corporativo Genovesa */
+          border-bottom: 1px solid var(--border); 
+          padding: 15px 25px; 
+          margin-bottom: 20px; 
+          box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
+      }
       .header-flex-container { display: flex; align-items: center; gap: 25px; }
-      .logo { width: 140px; height: auto; flex-shrink: 0; display: block; }
+      .logo { width: 130px; height: auto; flex-shrink: 0; display: block; }
       .header-text-wrapper { flex-grow: 1; display: flex; flex-direction: column; }
       
-      .header-title { text-align: center; font-size: 16px; font-weight: 700; color: #00457c; line-height: 1.3; padding-bottom: 8px; letter-spacing: 0.3px; }
+      .header-title { text-align: center; font-size: 16px; font-weight: 700; color: #00457c; line-height: 1.3; padding-bottom: 10px; letter-spacing: 0.3px; }
       
-      .template-details { display: flex; justify-content: space-between; font-size: 11px; color: #4a5568; padding: 6px 0; border-top: 1px dashed #cbd5e1; }
+      .template-details { display: flex; justify-content: space-between; font-size: 11px; color: #4a5568; padding: 6px 0; border-top: 1px solid #e2e8f0; }
       .template-details div { flex: 1; }
       .template-details div:nth-child(2) { text-align: center; }
       .template-details div:nth-child(3) { text-align: right; }
 
-      /* Responsividad para Operarios en Planta (Mobile) */
       @media (max-width: 650px) {
         .header-flex-container { flex-direction: column; gap: 15px; }
         .template-details { flex-direction: column; gap: 6px; padding: 8px 0 0 0; }
@@ -112,65 +118,71 @@
         .template-details div:not(:first-child) { border-top: 1px dashed #e2e8f0; padding-top: 6px; }
       }
 
-      /* Blindaje para Impresión PDF / Auditoría */
-      @media print {
-        .header-haccp-card { border: 2px solid #000 !important; border-radius: 0 !important; padding: 10px !important; margin-bottom: 15px !important; box-shadow: none !important; }
-        .header-title { color: #000 !important; font-size: 14px !important; }
-        .template-details { border-top: 1px dashed #000 !important; color: #000 !important; font-size: 10px !important; padding: 4px 0 !important; }
-      }
-
-     /* ==========================================
-         MOTOR NATIVO DE IMPRESIÓN / PDF VECTORIAL
+      /* ==========================================
+         MOTOR NATIVO DE IMPRESIÓN / OPTIMIZADOR DE DENSIDAD
          ========================================== */
       @media print {
         body { background-color: #ffffff !important; padding: 0 !important; color: #000000 !important; }
         .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-        
         .action-bar, .view-controls { display: none !important; }
-        .card { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 30px !important; }
         * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; print-color-adjust: exact !important; }
         
-        /* Forzar visibilidad de vistas */
-        #vista-tabla, #vista-partes, #vista-grafico { display: block !important; page-break-inside: auto; }
-        #vista-grafico { margin-top: 30px; }
+        /* Forzar visibilidad y Saltos de Página por Vista */
+        #vista-tabla, #vista-partes, #vista-grafico { 
+            display: block !important; 
+            page-break-inside: auto; 
+        }
+        /* Aislamiento de vistas en páginas nuevas */
+        #vista-partes, #vista-grafico { 
+            page-break-before: always !important; 
+            break-before: page !important; 
+            margin-top: 0 !important;
+        }
         
+        /* LIMPIEZA HACCP (Eliminación de marcos toscos) */
+        .header-haccp-card { 
+            box-shadow: none !important; 
+            border: none !important; 
+            border-top: 4px solid #C51D23 !important; 
+            border-bottom: 2px solid #e0e0e0 !important; 
+            padding: 8px 0 !important; 
+            margin-bottom: 12px !important; 
+        }
+        .header-title { color: #000 !important; font-size: 13px !important; padding-bottom: 6px !important;}
+        .template-details { border-top: 1px solid #000 !important; color: #000 !important; font-size: 9px !important; padding: 4px 0 !important; }
+        
+        /* OPTIMIZACIÓN DE DENSIDAD DE FILAS (Menos padding, texto compacto) */
+        .card { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 15px !important; }
+        td, th { padding: 4px 8px !important; font-size: 10px !important; }
+        .row-group-header td { padding: 5px 8px !important; font-size: 11px !important;}
+        .row-sub-item td { padding-left: 20px !important; padding-top: 2px !important; padding-bottom: 2px !important;}
+        
+        /* Compresión de la Matriz de Metadatos */
+        .summary-matrix { padding: 8px 12px !important; gap: 8px 20px !important; margin-bottom: 12px !important; }
+        .summary-row { padding-bottom: 2px !important; }
+        .summary-label { font-size: 10px !important; }
+        .summary-value { font-size: 12px !important; }
+        h2 { font-size: 14px !important; margin-bottom: 8px !important; }
+
+        /* Clones inyectados por JS */
+        .print-only-header { margin-bottom: 15px !important; display: block !important; }
+
         /* ======== SOLUCIÓN DE LEYENDAS LARGAS ======== */
-        .chart-layout { 
-            display: flex !important; 
-            flex-direction: column !important; /* Apila el gráfico arriba y la leyenda abajo */
-            page-break-inside: auto !important; /* Permite que el bloque se divida en varias páginas */
-            margin-bottom: 40px !important; 
-        }
-        .chart-canvas-wrapper { 
-            height: 350px !important; 
-            width: 100% !important; 
-            page-break-inside: avoid !important; /* Evita que la dona se corte por la mitad */
-            margin-bottom: 20px !important;
-        }
-        .chart-legend-wrapper { 
-            max-height: none !important; /* Quita el límite de altura para imprimir */
-            overflow: visible !important; /* Muestra todos los items ocultos */
-            width: 100% !important;
-            page-break-inside: auto !important; /* Permite que la lista salte a la siguiente hoja */
-        }
-        /* Evita que un item de la leyenda se corte a la mitad horizontalmente en el salto de página */
-        .chart-legend-wrapper > div > div {
-            page-break-inside: avoid !important;
-        }
-        .grafico-titulo { page-break-after: avoid; }
-        /* ============================================= */
+        .chart-layout { display: flex !important; flex-direction: column !important; page-break-inside: auto !important; margin-bottom: 20px !important; }
+        .chart-canvas-wrapper { height: 300px !important; width: 100% !important; page-break-inside: avoid !important; margin-bottom: 15px !important; }
+        .chart-legend-wrapper { max-height: none !important; overflow: visible !important; width: 100% !important; page-break-inside: auto !important; }
+        .chart-legend-wrapper > div > div { page-break-inside: avoid !important; padding: 4px 8px !important; margin-bottom: 2px !important;}
+        .grafico-titulo { page-break-after: avoid; font-size: 13px !important; padding-bottom: 6px !important; margin-bottom: 10px !important;}
         
-        /* Forzar Acordeón abierto */
+        /* Forzar Acordeón abierto y prevención de cortes */
         .row-sub-item { display: table-row !important; }
         .fa-chevron-down, .fa-chevron-right { display: none !important; } 
-        
-        /* Prevención de cortes de tabla */
         table { page-break-inside: auto; }
         tr { page-break-inside: avoid; page-break-after: auto; }
         thead { display: table-header-group; } 
         tfoot { display: table-footer-group; }
-        h2, h3, .summary-matrix { page-break-inside: avoid; }
       }
+      
     </style>
   </head>
   <body>
@@ -863,13 +875,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      // ==========================================
-      // MOTOR DE EXPORTACIÓN A PDF (IMPRESIÓN NATIVA)
+     // ==========================================
+      // MOTOR DE EXPORTACIÓN A PDF (IMPRESIÓN NATIVA MULTIPÁGINA)
       // ==========================================
       function descargarPDF() {
         const btnExportar = document.getElementById('btnExportar');
         const originalText = btnExportar.innerHTML;
-        btnExportar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando Documento...';
+        btnExportar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando Spooler...';
         btnExportar.disabled = true;
 
         const safeGet = (id) => { const el = document.getElementById(id); return el ? el.innerText.trim() : ''; };
@@ -878,11 +890,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const producto = safeGet('lblProductoDestino').toUpperCase(); 
         const lote = safeGet('lblLote').toUpperCase();
         
-        // El motor PDF usará esta etiqueta rigurosa para guardar el archivo en el OS del usuario
         const nombreArchivo = `${otmp ? otmp + '_' : ''}TRANSFORMACION_${producto}_LOTE-${lote}`;
 
         const tituloOriginal = document.title;
-        document.title = nombreArchivo;
+        document.title = nombreArchivo; // Inyectado al OS para nombre del PDF
 
         let vistaActiva = 'tabla';
         if (document.getElementById('vista-partes').style.display === 'block') vistaActiva = 'partes';
@@ -892,15 +903,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         const displayAcordeones = [];
         filasHijas.forEach(fila => { displayAcordeones.push(fila.style.display); fila.style.display = 'table-row'; });
 
+        // Forzamos el despliegue del layout completo
         document.getElementById('vista-tabla').style.display = 'block';
         document.getElementById('vista-partes').style.display = 'block';
         document.getElementById('vista-grafico').style.display = 'block';
         
+        // ==============================================================
+        // O(1) DOM BYPASS: CLONACIÓN DE CABECERAS PARA PAGINACIÓN PDF
+        // ==============================================================
+        const haccpCard = document.querySelector('.header-haccp-card');
+        const metaCard = document.querySelector('.header-card');
+        
+        const createPrintHeader = () => {
+            const container = document.createElement('div');
+            container.className = 'print-only-header';
+            container.appendChild(haccpCard.cloneNode(true));
+            container.appendChild(metaCard.cloneNode(true));
+            return container;
+        };
+
+        // Generamos clones en memoria
+        const clonePartes = createPrintHeader();
+        const cloneGrafico = createPrintHeader();
+
+        // Inyectamos como primer hijo de cada vista (Forzando la cabecera post-Salto de Página)
+        const vistaPartes = document.getElementById('vista-partes');
+        const vistaGrafico = document.getElementById('vista-grafico');
+        
+        vistaPartes.insertBefore(clonePartes, vistaPartes.firstChild);
+        vistaGrafico.insertBefore(cloneGrafico, vistaGrafico.firstChild);
+
         if (chartPartesObj) chartPartesObj.resize();
         if (chartInsumosObj) chartInsumosObj.resize();
 
+        // Delegamos al Spooler del SO
         setTimeout(() => {
             window.print(); 
+            
+            // ==============================================================
+            // GARBAGE COLLECTION: Restauración silenciosa del DOM
+            // ==============================================================
+            clonePartes.remove();
+            cloneGrafico.remove();
             
             document.title = tituloOriginal; 
             ['tabla', 'partes', 'grafico'].forEach(v => { document.getElementById('vista-' + v).style.display = 'none'; });
@@ -908,7 +952,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             filasHijas.forEach((fila, i) => { fila.style.display = displayAcordeones[i]; });
 
             btnExportar.innerHTML = originalText; btnExportar.disabled = false;
-        }, 500); 
+        }, 600); 
       }
       
     </script>
