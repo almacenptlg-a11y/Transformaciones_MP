@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     // AbortController para mitigar cuelgues infinitos en GAS (Timeout de 15s)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const response = await fetch(`${WEB_APP_URL}?id_trans=${idTrans}`, { 
         signal: controller.signal,
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (error) {
     console.error("Crash en Fetch/Backend:", error);
-    let errorMsg = error.name === 'AbortError' ? 'El servidor (GAPS) tardó demasiado (Timeout de 15s).' : escapeHtml(error.message);
+    let errorMsg = error.name === 'AbortError' ? 'El servidor (GAPS) tardó demasiado (Timeout de 30s).' : escapeHtml(error.message);
     loaderEl.innerHTML = `<div class="kpi-badge text-danger" style="margin:auto; max-width:max-content; padding:15px;"><i class="fas fa-wifi"></i> Falla de Conexión / Backend:<br>${errorMsg}<br><small>Pulsa F5 para reintentar.</small></div>`;
   }
 });
