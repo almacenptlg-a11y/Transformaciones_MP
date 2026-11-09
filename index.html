@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error("Crash en Fetch/Backend:", error);
     let errorMsg = error.name === 'AbortError' ? 'El servidor (GAPS) tardó demasiado (Timeout de 15s).' : escapeHtml(error.message);
-    loaderEl.innerHTML = `<div class="kpi-badge text-danger" style="margin:auto; max-width:max-content; padding:15px;"><i class="fas fa-wifi"></i> Falla de Conexión / Backend:<br>${errorMsg}<br><small>Pulsa F12 para modo depuración.</small></div>`;
+    loaderEl.innerHTML = `<div class="kpi-badge text-danger" style="margin:auto; max-width:max-content; padding:15px;"><i class="fas fa-wifi"></i> Falla de Conexión / Backend:<br>${errorMsg}<br><small>Pulsa F5 para reintentar.</small></div>`;
   }
 });
 
